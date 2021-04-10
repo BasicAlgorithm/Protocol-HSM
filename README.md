@@ -12,10 +12,10 @@
 
 
 # Login
-## Definition
+### Definition
 >This acction is about
 
-## Structure
+##$ Structure
 ```c++
 
 {
@@ -24,10 +24,10 @@
 }
 ```
 # Lista
-## Definition
+### Definition
 >This acction is about
 
-## Structure
+### Structure
 ```c++
 
 {
@@ -36,10 +36,10 @@
 }
 ```
 # Message to user
-## Definition
+### Definition
 >This acction is about
 
-## Structure
+### Structure
 ```c++
 
 {
@@ -48,10 +48,10 @@
 }
 ```
 # Message to all users
-## Definition
+### Definition
 >This acction is about
 
-## Structure
+### Structure
 ```c++
 
 {
@@ -60,10 +60,10 @@
 }
 ```
 # Send File
-## Definition
+### Definition
 >This acction is about
 
-## Structure
+### Structure
 ```c++
 
 {
@@ -72,10 +72,10 @@
 }
 ```
 # Close chat
-## Definition
+### Definition
 >This acction is about
 
-## Structure
+### Structure
 ```c++
 
 {
@@ -84,10 +84,10 @@
 }
 ```
 # Error
-## Definition
+### Definition
 >This acction is about
 
-## Structure
+### Structure
 ```c++
 
 {
