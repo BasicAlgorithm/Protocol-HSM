@@ -15,7 +15,7 @@
 ### Definition
 >This acction is about
 
-##$ Structure
+### Structure
 ```c++
 
 {
