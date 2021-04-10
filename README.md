@@ -11,11 +11,11 @@
 
 
 
-#Login
-##Definition
+# Login
+## Definition
 >This acction is about
 
-#Structure
+## Structure
 ```c++
 
 {
@@ -23,11 +23,11 @@
 	char tamano_user[2];
 }
 ```
-#Lista
-##Definition
+# Lista
+## Definition
 >This acction is about
 
-#Structure
+## Structure
 ```c++
 
 {
@@ -35,11 +35,11 @@
 	char tamano_user[2];
 }
 ```
-#Message to user
-##Definition
+# Message to user
+## Definition
 >This acction is about
 
-#Structure
+## Structure
 ```c++
 
 {
@@ -47,11 +47,11 @@
 	char tamano_user[2];
 }
 ```
-#Message to all users
-#Definition
+# Message to all users
+## Definition
 >This acction is about
 
-#Structure
+## Structure
 ```c++
 
 {
@@ -59,11 +59,11 @@
 	char tamano_user[2];
 }
 ```
-#Send File
-#Definition
+# Send File
+## Definition
 >This acction is about
 
-#Structure
+## Structure
 ```c++
 
 {
@@ -71,11 +71,11 @@
 	char tamano_user[2];
 }
 ```
-#Close chat
-#Definition
+# Close chat
+## Definition
 >This acction is about
 
-#Structure
+## Structure
 ```c++
 
 {
@@ -83,11 +83,11 @@
 	char tamano_user[2];
 }
 ```
-#Error
-#Definition
+# Error
+## Definition
 >This acction is about
 
-#Structure
+## Structure
 ```c++
 
 {
