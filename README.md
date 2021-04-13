@@ -5,11 +5,10 @@
 
 # Login
 ### Definition
->This acction is about
+This action is about
 
-### Structure [user ---> server]
+### Structure [user 🡒 server]
 ```c++
-
 {
 	char  accion; //l 
 	char  tamaño_user[2];
@@ -18,61 +17,57 @@
 	char  * password; 
 }
 ```
->ejemplo:
+>Example:
 l0504julioucsp
 l1104santistebanucsp
 
-### Structure [server ---> user]
+### Structure [server 🡒 user]
 ```c++
-
 ok{
-	char accion;// L
+	char accion; // L
 	char ok[2];
 }
 error{
-	char accion;// E
+	char accion; // E
 	char error_msg[20];
 }
 ```
->ejemplo:
+>Example:
 Lok
 E fix-20 msg
 
 # Lista
 ### Definition
->This acction is about
+This action is about
 
-### Structure [user ---> server]
+### Structure [user 🡒 server]
 ```c++
-
 {
 	char accion;
 	char tamano_user[2];
 }
 ```
 
-### Structure [server ---> user]
+### Structure [server 🡒 user]
 ```c++
-
 {
-	char accion;//I
+	char accion; // I
 	char  num_users[2];
 	char  tamaño_user_name[2];
 	char  * user_name; 
 }
 ```
->eg: I03110305SantistebanLeePeter
+>Example: I03110305SantistebanLeePeter
     I03030203JonWuLee
 
 # Message to user
 ### Definition
->This acction is about
+This action is about
 
-### Structure [user ---> server]
+### Structure [user 🡒 server]
 ```c++
-
 {
-	char accion;//m
+	char accion; // m
 	char tamaño_msg[3];
 	char tamaño_destinatario[2];
 	char * msg;
@@ -80,11 +75,10 @@ E fix-20 msg
 }
 ```
 
-### Structure [server ---> user]
+### Structure [server 🡒 user]
 ```c++
-
 {
-	char accion;//M
+	char accion; // M
 	char tamaño_msg[3];
 	char tamaño_remitente[2];
 	char * msg;
@@ -92,25 +86,23 @@ E fix-20 msg
 }
 ```
 
-# Message to all users
+# Broadcast Message
 ### Definition
->This acction is about
+This action is about
 
-### Structure [user ---> server]
+### Structure [user 🡒 server]
 ```c++
-
 {
-	char accion;//b
+	char accion; // b
 	char tamaño_msg[3];
 	char * msg;
 }
 ```
 
-### Structure [server ----> user]
+### Structure [server 🡒 user]
 ```c++
-
 {
-	char accion;//B
+	char accion; // B
 	char tamaño_msg[3];
 	char tamaño_remitente[2];
 	char * msg;
@@ -120,11 +112,10 @@ E fix-20 msg
 
 # Upload File
 ### Definition
->This acction is about
+This action is about
 
-### Structure [user -> server]
+### Structure [user 🡒 server]
 ```c++
-
 {
 	char accion;
 	char tamaño_file_name[3];
@@ -137,9 +128,8 @@ E fix-20 msg
 }
 ```
 
-### Structure [server -> user]
+### Structure [server 🡒 user]
 ```c++
-
 {
 	char accion; // U
 	char tamaño_file_name[3];
@@ -154,11 +144,10 @@ E fix-20 msg
 
 # Accept or reject File
 ### Definition
->This acction is about
+This action is about
 
-### Structure [user -> server]
+### Structure [user 🡒 server]
 ```c++
-
 {
 	char accion; // f	
 	char tamaño_remitente[2];
@@ -166,9 +155,8 @@ E fix-20 msg
 }
 ```
 
-### Structure [server -> user]
+### Structure [server 🡒 user]
 ```c++
-
 {
 	char accion; // F	remitente notificado que rechazaron archivo
 	char tamaño_user_name[2];
@@ -179,19 +167,17 @@ E fix-20 msg
 
 # Exit chat
 ### Definition
->This acction is about
+This action is about
 
-### Structure [user -> server]
+### Structure [user 🡒 server]
 ```c++
-
 {
 	char accion; // x
 }
 ```
 
-### Structure [server -> user]
+### Structure [server 🡒 user]
 ```c++
-
 {
 	char accion; // X
 }
@@ -199,11 +185,10 @@ E fix-20 msg
 
 # Error
 ### Definition
->This acction is about
+This action is about
 
-### Structure [server -> user]
+### Structure [server 🡒 user]
 ```c++
-
 {
 	char accion; // e
 	char msg[20];
