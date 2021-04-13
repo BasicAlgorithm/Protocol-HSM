@@ -2,7 +2,7 @@
 
 struct HSMP {
 
-  struct Client {
+  struct ClientRequest {
     struct Login {};
 
     struct Lista {};
@@ -31,7 +31,7 @@ struct HSMP {
 
   };
 
-  struct Server {
+  struct ServerResponse {
     struct Login {};
 
     struct Lista {};
