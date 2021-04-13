@@ -10,11 +10,11 @@ This action is about
 ### Structure [user 🡒 server]
 ```c++
 {
-	char  accion; //l 
-	char  tamaño_user[2];
-	char  tamaño_password[2];
-	char  * user; 
-	char  * password; 
+	char accion; // l 
+	char tamaño_user[2];
+	char tamaño_password[2];
+	char* user; 
+	char* password; 
 }
 ```
 >Example:
@@ -23,13 +23,9 @@ l1104santistebanucsp
 
 ### Structure [server 🡒 user]
 ```c++
-ok{
+ok {
 	char accion; // L
 	char ok[2];
-}
-error{
-	char accion; // E
-	char error_msg[20];
 }
 ```
 >Example:
@@ -43,8 +39,7 @@ This action is about
 ### Structure [user 🡒 server]
 ```c++
 {
-	char accion;
-	char tamano_user[2];
+	char accion; // i
 }
 ```
 
@@ -52,9 +47,9 @@ This action is about
 ```c++
 {
 	char accion; // I
-	char  num_users[2];
-	char  tamaño_user_name[2];
-	char  * user_name; 
+	char num_users[2];
+	char tamaño_user_name[2];
+	char* user_name; 
 }
 ```
 >Example: I03110305SantistebanLeePeter
@@ -70,8 +65,8 @@ This action is about
 	char accion; // m
 	char tamaño_msg[3];
 	char tamaño_destinatario[2];
-	char * msg;
-	char * destinatario;
+	char* msg;
+	char* destinatario;
 }
 ```
 
@@ -81,8 +76,8 @@ This action is about
 	char accion; // M
 	char tamaño_msg[3];
 	char tamaño_remitente[2];
-	char * msg;
-	char * remitente;
+	char* msg;
+	char* remitente;
 }
 ```
 
@@ -95,7 +90,7 @@ This action is about
 {
 	char accion; // b
 	char tamaño_msg[3];
-	char * msg;
+	char* msg;
 }
 ```
 
@@ -105,8 +100,8 @@ This action is about
 	char accion; // B
 	char tamaño_msg[3];
 	char tamaño_remitente[2];
-	char * msg;
-	char * remitente;
+	char* msg;
+	char* remitente;
 }
 ```
 
@@ -121,9 +116,9 @@ This action is about
 	char tamaño_file_name[3];
 	char tamaño_file_data[10];
 	char tamaño_destinatario[2];
-	char * file_name;
-	char * file_data;
-	char * destinatario;
+	char* file_name;
+	char* file_data;
+	char* destinatario;
 	
 }
 ```
@@ -135,9 +130,9 @@ This action is about
 	char tamaño_file_name[3];
 	char tamaño_file_data[10];
 	char tamaño_remitente[2];
-	char * file_name;
-	char * file_data;
-	char * remitente;
+	char* file_name;
+	char* file_data;
+	char* remitente;
 	
 }
 ```
@@ -151,7 +146,7 @@ This action is about
 {
 	char accion; // f	
 	char tamaño_remitente[2];
-	char * remitente;
+	char* remitente;
 }
 ```
 
@@ -160,7 +155,7 @@ This action is about
 {
 	char accion; // F	remitente notificado que rechazaron archivo
 	char tamaño_user_name[2];
-	char * user_name;
+	char* user_name;
 }
 ```
 
@@ -190,7 +185,7 @@ This action is about
 ### Structure [server 🡒 user]
 ```c++
 {
-	char accion; // e
+	char accion; // E
 	char msg[20];
 }
 ```
