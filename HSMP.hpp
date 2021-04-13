@@ -1,19 +1,64 @@
 #pragma once
 
-class HSMP {
-  struct Login {};
+struct HSMP {
 
-  struct Lista {};
+  struct ClientRequest {
+    struct Login {};
 
-  struct Message {};
+    struct Lista {};
 
-  struct Broadcast {};
+    struct Message {
+      char accion; // m
+      char tam_msg[3];
+      char tam_destinatario[2];
+      char *msg;
+      char *destinatario;
+    };
 
-  struct UploadFile {};
+    struct Broadcast {};
 
-  struct File_AN {};
+    struct UploadFile {};
 
-  struct Exit {};
+    struct File_AN {
+      char accion; // f	
+      char tam_remitente[2];
+      char *remitente;
+    };
 
-  struct Error {};
+    struct Exit {
+      char accion; // x
+    };
+
+  };
+
+  struct ServerResponse {
+    struct Login {};
+
+    struct Lista {};
+
+    struct Message {
+      char accion; // M
+      char tam_msg[3];
+      char tam_remitente[2];
+      char *msg;
+      char *remitente;
+    };
+
+    struct Broadcast {};
+
+    struct UploadFile {};
+
+    struct File_AN {
+      char accion; // F	
+      char tam_usuario[2];
+      char *usuario;
+    };
+
+    struct Exit {
+      char accion; // X
+    };
+
+    struct Error {};
+  }; 
+
 };
