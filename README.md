@@ -1,4 +1,4 @@
-# HIGH SPEED MOSQUETEROS PROTOCOL
+# High Speed Mosqueteros Protocol (HSMP)
 # Introduccion
 
 - This protocol is an introductory knowledge about internet protocols
