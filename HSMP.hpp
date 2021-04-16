@@ -201,7 +201,7 @@ struct BroadcastResponse : ServerResponse {
   char* msg;
   char* remitente;
 
-  BroadcastResponse(){}
+  BroadcastResponse(): ServerResponse('B', kBroadcastResponse)
   ~BroadcastResponse(){}
 
   void PrintStructure() const {
@@ -221,7 +221,7 @@ struct UploadFileResponse : ServerResponse {
   void* file_data; // castear segun es imagen/video/etc
   char* remitente;
 
-  UploadFileResponse(){}
+  UploadFileResponse() : ServerResponse('U',kUploadFileResponse)
   ~UploadFileResponse(){}
 
   void PrintStructure() const {
