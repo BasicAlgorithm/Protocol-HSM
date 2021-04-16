@@ -80,13 +80,36 @@ struct MessageRequest : ClientRequest {
 };
 
 struct BroadcastRequest : ClientRequest {
+  short int tam_msg;
+  std::string msg;
+
+  BroadcastRequest() : ClientRequest('b',kBroadcastRequest)
   ~BroadcastRequest() {}
-  void PrintStructure() const {}
+  void PrintStructure() const {
+    std::cout << "BroadcastRequest:\n";
+    std::cout << "\tmensaje tam: "<<this->tam_msg<<"\n";
+    std::cout << "\tmensaje: "<<this->msg<<std::endl;
+  }
 };
 
 struct UploadFileRequest : ClientRequest {
+  short int tam_file_name;
+  short int tam_file_data;
+  short int tam_destinatario;
+  std::string file_name;
+  void file_data; // castear segun es imagen/video/etc
+  std::string destinatario;
+
+  UploadFileRequest() : ClientRequest('u',kUploadFileRequest)
   ~UploadFileRequest() {}
-  void PrintStructure() const {}
+  void PrintStructure() const {
+    std::cout << "UploadFileRequest:\n";
+    std::cout << "\tfile nombre tam: "<<this->tam_file_name<<"\n";
+    std::cout << "\tfile nombre: "<<this->file_name<<"\n";
+    std::cout << "\tfile tam: "<<this->tam_file_data<<"\n";
+    std::cout << "\tdestinatario tam: "<<this->tam_destinatario<<"\n";
+    std::cout << "\tdestinatario : "<<this->destinatario<<std::endl;
+  }
 };
 
 struct File_ANRequest : ClientRequest {
@@ -172,9 +195,45 @@ struct MessageResponse : ServerResponse {
   void PrintStructure() const {}
 };
 
-struct BroadcastResponse : ServerResponse {};
+struct BroadcastResponse : ServerResponse {
+  char tam_msg;
+  char tam_remitente;
+  char* msg;
+  char* remitente;
 
-struct UploadFileResponse : ServerResponse {};
+  BroadcastResponse(){}
+  ~BroadcastResponse(){}
+
+  void PrintStructure() const {
+    std::cout << "BroadcastResponse:\n";
+    std::cout << "\tmensaje tam: "<<this->tam_msg<<"\n";
+    std::cout << "\tmensaje: "<<this->msg<<"\n";
+    std::cout << "\tremitente tam: "<<this->tam_remitente<<"\n";
+    std::cout << "\tremitente: "<<this->remitente<<std::endl;
+  }
+};
+
+struct UploadFileResponse : ServerResponse {
+  char tama_file_name;
+  char tam_file_data;
+  char tam_remitente;
+  char* file_name;
+  void* file_data; // castear segun es imagen/video/etc
+  char* remitente;
+
+  UploadFileResponse(){}
+  ~UploadFileResponse(){}
+
+  void PrintStructure() const {
+    std::cout << "UploadFileResponse:\n";
+    std::cout << "\tfile tam: "<<this->tama_file_name<<"\n";
+    std::cout << "\tfile: "<<this->file_name<<"\n";
+    std::cout << "\tfile tam: "<<this->tam_file_data<<"\n";
+    std::cout << "\tremitente tam: "<<this->tam_remitente<<"\n";
+    std::cout << "\tremitente: "<<this->remitente<<std::endl;
+  }
+
+};
 
 struct File_ANResponse : ServerResponse {
   char tam_usuario[2];
@@ -229,6 +288,28 @@ std::shared_ptr<ClientRequest> ProcessRequest(std::string buffer) {
       mreq->msg = buffer.substr(6, mreq->tam_msg);
       mreq->destinatario = buffer.substr(6 + mreq->tam_msg, mreq->tam_destinatario);
       return mreq;
+    }
+
+    case 'b': {
+      auto breq = std::make_shared<BroadcastRequest>();
+
+      breq->mensajeTamano = atoi(buffer.substr(1, 3).c_str());
+
+      breq->mensajeContenido = buffer.substr(4, breq->mensajeTamano);
+      return breq;
+    }
+
+    case 'u': {
+      auto ureq = std::make_shared<UploadFileRequest>();
+
+      ureq->fileNombreTamano = atoi(buffer.substr(1, 3).c_str());
+      ureq->fileDataTamano = atoi(buffer.substr(4, 10).c_str());
+      ureq->destinatarioTamano = atoi(buffer.substr(14, 2).c_str());
+
+      ureq->fileNombreContenido = buffer.substr(16, ureq->fileNombreTamano);
+      ureq->fileDataContenido; // depende el archivo
+      ureq->destinatarioContenido = buffer.substr(16 + ureq->fileNombreTamano + ureq->fileDataTamano, ureq->destinatarioTamano);
+      return ureq;
     }
 
     case 'f': {
