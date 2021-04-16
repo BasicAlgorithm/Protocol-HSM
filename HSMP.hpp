@@ -83,12 +83,13 @@ struct BroadcastRequest : ClientRequest {
   short int tam_msg;
   std::string msg;
 
-  BroadcastRequest() : ClientRequest('b',kBroadcastRequest)
+  BroadcastRequest() : ClientRequest('b', kBroadcastRequest) {}
   ~BroadcastRequest() {}
+
   void PrintStructure() const {
     std::cout << "BroadcastRequest:\n";
-    std::cout << "\tmensaje tam: "<<this->tam_msg<<"\n";
-    std::cout << "\tmensaje: "<<this->msg<<std::endl;
+    std::cout << "\tmensaje tam: " << this->tam_msg << "\n";
+    std::cout << "\tmensaje: " << this->msg << std::endl;
   }
 };
 
@@ -100,15 +101,16 @@ struct UploadFileRequest : ClientRequest {
   void file_data; // castear segun es imagen/video/etc
   std::string destinatario;
 
-  UploadFileRequest() : ClientRequest('u',kUploadFileRequest)
+  UploadFileRequest() : ClientRequest('u', kUploadFileRequest) {}
   ~UploadFileRequest() {}
+
   void PrintStructure() const {
     std::cout << "UploadFileRequest:\n";
-    std::cout << "\tfile nombre tam: "<<this->tam_file_name<<"\n";
-    std::cout << "\tfile nombre: "<<this->file_name<<"\n";
-    std::cout << "\tfile tam: "<<this->tam_file_data<<"\n";
-    std::cout << "\tdestinatario tam: "<<this->tam_destinatario<<"\n";
-    std::cout << "\tdestinatario : "<<this->destinatario<<std::endl;
+    std::cout << "\tfile nombre tam: " << this->tam_file_name << "\n";
+    std::cout << "\tfile nombre: " << this->file_name << "\n";
+    std::cout << "\tfile tam: " << this->tam_file_data << "\n";
+    std::cout << "\tdestinatario tam: " << this->tam_destinatario << "\n";
+    std::cout << "\tdestinatario : " << this->destinatario << std::endl;
   }
 };
 
@@ -201,15 +203,15 @@ struct BroadcastResponse : ServerResponse {
   char* msg;
   char* remitente;
 
-  BroadcastResponse(): ServerResponse('B', kBroadcastResponse)
+  BroadcastResponse(): ServerResponse('B', kBroadcastResponse) {}
   ~BroadcastResponse(){}
 
   void PrintStructure() const {
     std::cout << "BroadcastResponse:\n";
-    std::cout << "\tmensaje tam: "<<this->tam_msg<<"\n";
-    std::cout << "\tmensaje: "<<this->msg<<"\n";
-    std::cout << "\tremitente tam: "<<this->tam_remitente<<"\n";
-    std::cout << "\tremitente: "<<this->remitente<<std::endl;
+    std::cout << "\tmensaje tam: " << this->tam_msg << "\n";
+    std::cout << "\tmensaje: " << this->msg << "\n";
+    std::cout << "\tremitente tam: " << this->tam_remitente << "\n";
+    std::cout << "\tremitente: " << this->remitente << std::endl;
   }
 };
 
@@ -221,16 +223,16 @@ struct UploadFileResponse : ServerResponse {
   void* file_data; // castear segun es imagen/video/etc
   char* remitente;
 
-  UploadFileResponse() : ServerResponse('U',kUploadFileResponse)
+  UploadFileResponse() : ServerResponse('U', kUploadFileResponse) {}
   ~UploadFileResponse(){}
 
   void PrintStructure() const {
     std::cout << "UploadFileResponse:\n";
-    std::cout << "\tfile tam: "<<this->tama_file_name<<"\n";
-    std::cout << "\tfile: "<<this->file_name<<"\n";
-    std::cout << "\tfile tam: "<<this->tam_file_data<<"\n";
-    std::cout << "\tremitente tam: "<<this->tam_remitente<<"\n";
-    std::cout << "\tremitente: "<<this->remitente<<std::endl;
+    std::cout << "\tfile tam: " << this->tama_file_name << "\n";
+    std::cout << "\tfile: " << this-> file_name << "\n";
+    std::cout << "\tfile tam: " << this-> tam_file_data << "\n";
+    std::cout << "\tremitente tam: " << this-> tam_remitente << "\n";
+    std::cout << "\tremitente: " << this->remitente << std::endl;
   }
 
 };
