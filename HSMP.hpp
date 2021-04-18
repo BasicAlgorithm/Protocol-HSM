@@ -98,7 +98,7 @@ struct UploadFileRequest : ClientRequest {
   short int tam_file_data;
   short int tam_destinatario;
   std::string file_name;
-  void file_data; // castear segun es imagen/video/etc
+  char* file_data; // castear segun es imagen/video/etc
   std::string destinatario;
 
   UploadFileRequest() : ClientRequest('u', kUploadFileRequest) {}
@@ -220,7 +220,7 @@ struct UploadFileResponse : ServerResponse {
   char tam_file_data;
   char tam_remitente;
   char* file_name;
-  void* file_data; // castear segun es imagen/video/etc
+  char* file_data; // castear segun es imagen/video/etc
   char* remitente;
 
   UploadFileResponse() : ServerResponse('U', kUploadFileResponse) {}
@@ -295,22 +295,22 @@ std::shared_ptr<ClientRequest> ProcessRequest(std::string buffer) {
     case 'b': {
       auto breq = std::make_shared<BroadcastRequest>();
 
-      breq->mensajeTamano = atoi(buffer.substr(1, 3).c_str());
+      breq->tam_msg = atoi(buffer.substr(1, 3).c_str());
 
-      breq->mensajeContenido = buffer.substr(4, breq->mensajeTamano);
+      breq->msg = buffer.substr(4, breq->tam_msg);
       return breq;
     }
 
     case 'u': {
       auto ureq = std::make_shared<UploadFileRequest>();
 
-      ureq->fileNombreTamano = atoi(buffer.substr(1, 3).c_str());
-      ureq->fileDataTamano = atoi(buffer.substr(4, 10).c_str());
-      ureq->destinatarioTamano = atoi(buffer.substr(14, 2).c_str());
+      ureq->tam_file_name = atoi(buffer.substr(1, 3).c_str());
+      ureq->tam_file_data = atoi(buffer.substr(4, 10).c_str());
+      ureq->tam_destinatario = atoi(buffer.substr(14, 2).c_str());
 
-      ureq->fileNombreContenido = buffer.substr(16, ureq->fileNombreTamano);
-      ureq->fileDataContenido; // depende el archivo
-      ureq->destinatarioContenido = buffer.substr(16 + ureq->fileNombreTamano + ureq->fileDataTamano, ureq->destinatarioTamano);
+      ureq->file_name = buffer.substr(16, ureq->tam_file_name);
+      //ureq->fileDataContenido; // depende el archivo
+      ureq->destinatario = buffer.substr(16 + ureq->tam_file_name + ureq->tam_file_data, ureq->tam_destinatario);
       return ureq;
     }
 
