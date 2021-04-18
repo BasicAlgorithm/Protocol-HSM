@@ -1,6 +1,6 @@
 #include <iostream>
 #include <memory>
-#include "HSMP.hpp"
+#include "HSMP-src/HSMP.hpp"
 
 int main() {
   std::shared_ptr<HSMP::ClientRequest> req = HSMP::ProcessRequest("l1104santistebanucsp");
