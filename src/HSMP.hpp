@@ -172,7 +172,10 @@ struct LoginResponse : ServerResponse {
   LoginResponse() : ServerResponse('L', kLoginResponse) {}
   ~LoginResponse() {}
 
-  void PrintStructure() const {}
+  void PrintStructure() const {
+    std::cout << "LoginResponse:\n";
+    std::cout << "\tLogin state: " << this->ok << std::endl;
+  }
 };
 
 struct ListaResponse : ServerResponse {
@@ -183,7 +186,13 @@ struct ListaResponse : ServerResponse {
   ListaResponse() : ServerResponse('I', kListaResponse) {}
   ~ListaResponse() {}
 
-  void PrintStructure() const {}
+  void PrintStructure() const {
+    std::cout << "ListaResponse:\n";
+    std::cout << "\tnumber of users: " << this->num_users << "\n";
+    for(int i = 0; i < num_users; ++i) {
+      std::cout << "\tUser #" << i << ": " << this->user_names[i] << "\n";
+    }
+  }
 };
 
 struct MessageResponse : ServerResponse {
@@ -195,14 +204,20 @@ struct MessageResponse : ServerResponse {
   MessageResponse() : ServerResponse('M', kMessageResponse) {}
   ~MessageResponse() {}
 
-  void PrintStructure() const {}
+  void PrintStructure() const {
+    std::cout << "MessageResponse:\n";
+    std::cout << "\ttam_msg: " << this->tam_msg << "\n";
+    std::cout << "\ttam_remitente: " << this->tam_remitente << "\n";
+    std::cout << "\tmsg: " << this->msg << "\n";
+    std::cout << "\tremitente: " << this->remitente << std::endl;
+  }
 };
 
 struct BroadcastResponse : ServerResponse {
-  char tam_msg;
-  char tam_remitente;
-  char* msg;
-  char* remitente;
+  short int tam_msg;
+  short int tam_remitente;
+  std::string msg;
+  std::string remitente;
 
   BroadcastResponse(): ServerResponse('B', kBroadcastResponse) {}
   ~BroadcastResponse(){}
@@ -217,12 +232,12 @@ struct BroadcastResponse : ServerResponse {
 };
 
 struct UploadFileResponse : ServerResponse {
-  char tama_file_name;
-  char tam_file_data;
-  char tam_remitente;
-  char* file_name;
-  char* file_data; // castear segun es imagen/video/etc
-  char* remitente;
+  short int tama_file_name;
+  short int tam_file_data;
+  short int tam_remitente;
+  std::string file_name;
+  std::string remitente;
+  std::string file_data; // castear segun es imagen/video/etc
 
   UploadFileResponse() : ServerResponse('U', kUploadFileResponse) {}
   ~UploadFileResponse(){}
@@ -245,14 +260,20 @@ struct File_ANResponse : ServerResponse {
   File_ANResponse() : ServerResponse('F', kFile_ANResponse) {}
   ~File_ANResponse() {}
 
-  void PrintStructure() const {}
+  void PrintStructure() const {
+    std::cout << "File_ANResponse:\n";
+    std::cout << "\ttam_user_name: " << this->tam_user_name << "\n";
+    std::cout << "\tuser_name: " << this->user_name << std::endl;
+  }
 };
 
 struct ExitResponse : ServerResponse {
   ExitResponse() : ServerResponse('X', kExitResponse) {}
   ~ExitResponse() {}
 
-  void PrintStructure() const {}
+  void PrintStructure() const {
+    std::cout << "ExitResponse" << std::endl;
+  }
 };
 
 struct ErrorResponse : ServerResponse {
@@ -261,7 +282,10 @@ struct ErrorResponse : ServerResponse {
   ErrorResponse() : ServerResponse('E', kErrorResponse) {}
   ~ErrorResponse() {}
 
-  void PrintStructure() const {}
+  void PrintStructure() const {
+    std::cout << "ErrorResponse:\n";
+    std::cout << "\tmessage: " << this->message << std::endl;
+  }
 };
 
 
