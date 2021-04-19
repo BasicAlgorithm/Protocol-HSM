@@ -4,6 +4,7 @@
 #include <memory>
 #include <exception>
 #include <stdlib.h>
+#include <vector>
 
 namespace HSMP {
 
@@ -166,42 +167,57 @@ struct ServerResponse {
 };
 
 struct LoginResponse : ServerResponse {
-  char ok[2];
+  std::string ok;
 
   LoginResponse() : ServerResponse('L', kLoginResponse) {}
   ~LoginResponse() {}
 
-  void PrintStructure() const {}
+  void PrintStructure() const {
+    std::cout << "LoginResponse:\n";
+    std::cout << "\tLogin state: " << this->ok << std::endl;
+  }
 };
 
 struct ListaResponse : ServerResponse {
-  char num_users[2];
-  char tam_user_name[2];
-  char* user_name;
+  short int num_users;
+  std::vector<short int> tam_user_names;
+  std::vector<std::string> user_names;
 
   ListaResponse() : ServerResponse('I', kListaResponse) {}
   ~ListaResponse() {}
 
-  void PrintStructure() const {}
+  void PrintStructure() const {
+    std::cout << "ListaResponse:\n";
+    std::cout << "\tnumber of users: " << this->num_users << "\n";
+    for(int i = 0; i < num_users; ++i) {
+      std::cout << "\tUser #" << i << ": " << this->user_names[i] << "\n";
+    }
+  }
 };
 
 struct MessageResponse : ServerResponse {
-  char tam_msg[3];
-  char tam_remitente[2];
-  char* msg;
-  char* remitente;
+  short int tam_msg;
+  short int tam_remitente;
+  std::string msg;
+  std::string remitente;
 
   MessageResponse() : ServerResponse('M', kMessageResponse) {}
   ~MessageResponse() {}
 
-  void PrintStructure() const {}
+  void PrintStructure() const {
+    std::cout << "MessageResponse:\n";
+    std::cout << "\ttam_msg: " << this->tam_msg << "\n";
+    std::cout << "\ttam_remitente: " << this->tam_remitente << "\n";
+    std::cout << "\tmsg: " << this->msg << "\n";
+    std::cout << "\tremitente: " << this->remitente << std::endl;
+  }
 };
 
 struct BroadcastResponse : ServerResponse {
-  char tam_msg;
-  char tam_remitente;
-  char* msg;
-  char* remitente;
+  short int tam_msg;
+  short int tam_remitente;
+  std::string msg;
+  std::string remitente;
 
   BroadcastResponse(): ServerResponse('B', kBroadcastResponse) {}
   ~BroadcastResponse(){}
@@ -216,12 +232,12 @@ struct BroadcastResponse : ServerResponse {
 };
 
 struct UploadFileResponse : ServerResponse {
-  char tama_file_name;
-  char tam_file_data;
-  char tam_remitente;
-  char* file_name;
-  char* file_data; // castear segun es imagen/video/etc
-  char* remitente;
+  short int tama_file_name;
+  short int tam_file_data;
+  short int tam_remitente;
+  std::string file_name;
+  std::string remitente;
+  std::string file_data; // castear segun es imagen/video/etc
 
   UploadFileResponse() : ServerResponse('U', kUploadFileResponse) {}
   ~UploadFileResponse(){}
@@ -238,25 +254,38 @@ struct UploadFileResponse : ServerResponse {
 };
 
 struct File_ANResponse : ServerResponse {
-  char tam_usuario[2];
-  char* usuario;
+  short int tam_user_name;
+  std::string user_name;
 
   File_ANResponse() : ServerResponse('F', kFile_ANResponse) {}
   ~File_ANResponse() {}
 
-  void PrintStructure() const {}
+  void PrintStructure() const {
+    std::cout << "File_ANResponse:\n";
+    std::cout << "\ttam_user_name: " << this->tam_user_name << "\n";
+    std::cout << "\tuser_name: " << this->user_name << std::endl;
+  }
 };
 
-struct ExitResponse : ServerResponse { // X
+struct ExitResponse : ServerResponse {
+  ExitResponse() : ServerResponse('X', kExitResponse) {}
+  ~ExitResponse() {}
+
+  void PrintStructure() const {
+    std::cout << "ExitResponse" << std::endl;
+  }
 };
 
 struct ErrorResponse : ServerResponse {
-  char message[20];
+  std::string message;
 
   ErrorResponse() : ServerResponse('E', kErrorResponse) {}
   ~ErrorResponse() {}
 
-  void PrintStructure() const {}
+  void PrintStructure() const {
+    std::cout << "ErrorResponse:\n";
+    std::cout << "\tmessage: " << this->message << std::endl;
+  }
 };
 
 
@@ -316,8 +345,10 @@ std::shared_ptr<ClientRequest> ProcessRequest(std::string buffer) {
 
     case 'f': {
       auto freq = std::make_shared<File_ANRequest>();
-      freq->tam_remitente = atoi(buffer.substr(1,2).c_str());
+      
+      freq->tam_remitente = atoi(buffer.substr(1, 2).c_str());
       freq->remitente = buffer.substr(3, freq->tam_remitente);
+      
       return freq;
     }
 
@@ -331,6 +362,65 @@ std::shared_ptr<ClientRequest> ProcessRequest(std::string buffer) {
   }
 }
 
+std::shared_ptr<ServerResponse> ProcessResponse(std::string buffer) {
+  char action = buffer[0];
+
+  switch (action) {
+    case 'L': {
+      auto Lres = std::make_shared<LoginResponse>();
+      Lres->ok = buffer.substr(1, 2);
+      return Lres;
+    }
+
+    case 'I': {
+      auto Ires = std::make_shared<ListaResponse>();
+
+      Ires->num_users = atoi(buffer.substr(1, 2).c_str());
+      for (int i = 0; i < Ires->num_users; ++i) {
+        Ires->tam_user_names.push_back(atoi(buffer.substr(2 * i + 3, 2).c_str()));
+      }
+      short int current_position = 2 * Ires->num_users + 3;
+      for (int i = 0; i < Ires->num_users; ++i) {
+        Ires->user_names.push_back(buffer.substr(current_position, Ires->tam_user_names[i]));
+        current_position += Ires->tam_user_names[i];
+      }
+      return Ires;
+    }
+
+    case 'M': {
+      auto Mres = std::make_shared<MessageResponse>();
+
+      Mres->tam_msg = atoi(buffer.substr(1, 3).c_str());
+      Mres->tam_remitente = atoi(buffer.substr(4, 2).c_str());
+      
+      Mres->msg = buffer.substr(6, Mres->tam_msg);
+      Mres->remitente = buffer.substr(6 + Mres->tam_msg, Mres->tam_remitente);
+      
+      return Mres;
+    }
+
+    case 'F': {
+      auto Fres = std::make_shared<File_ANResponse>();
+      Fres->tam_user_name = atoi(buffer.substr(1, 2).c_str());
+      Fres->user_name = buffer.substr(3, Fres->tam_user_name);
+      return Fres;
+    }
+
+    case 'X': {
+      auto Xres = std::make_shared<ExitResponse>();
+      return Xres;
+    }
+
+    case 'E': {
+      auto Eres = std::make_shared<ErrorResponse>();
+      Eres->message = buffer.substr(1);
+      return Eres;
+    }
+
+    default:
+      return nullptr;
+  }
+}
 // static void ProcessResponse(char* buffer); //read -->
 // static void SendRequest(std::string request);// --> write
 // static void SendResponse(std::string response);

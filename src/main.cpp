@@ -3,7 +3,9 @@
 #include "HSMP.hpp"
 
 int main() {
-  std::shared_ptr<HSMP::ClientRequest> req = HSMP::ProcessRequest("l1104santistebanucsp");
+  std::shared_ptr<HSMP::ClientRequest> req;
+
+  req=  HSMP::ProcessRequest("l1104santistebanucsp");
   req->PrintStructure();
 
   req = HSMP::ProcessRequest("i");
@@ -17,6 +19,32 @@ int main() {
 
   req = HSMP::ProcessRequest("x");
   req->PrintStructure();
+
+  std::shared_ptr<HSMP::ServerResponse> res;
+
+  res = HSMP::ProcessResponse("Lok");
+  res->PrintStructure();
+
+  res = HSMP::ProcessResponse("I03110305SantistebanLeePeter");
+  res->PrintStructure();
+
+  res = HSMP::ProcessResponse("M00305byemateo");
+  res->PrintStructure();
+
+  res = HSMP::ProcessResponse(""); //Broadcast
+  // res->PrintStructure();
+  
+  res = HSMP::ProcessResponse(""); // Upload
+  // res->PrintStructure();
+
+  res = HSMP::ProcessResponse("F05mateo");
+  res->PrintStructure();
+
+  res = HSMP::ProcessResponse("X");
+  res->PrintStructure();
+
+  res = HSMP::ProcessResponse("EThis is a Error Message");
+  res->PrintStructure();
 
   return 0;
 }
