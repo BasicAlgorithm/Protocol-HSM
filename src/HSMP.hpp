@@ -5,6 +5,12 @@
 #include <exception>
 #include <stdlib.h>
 #include <vector>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <string.h>
 
 namespace HSMP {
 
@@ -189,9 +195,9 @@ struct ListaResponse : ServerResponse {
   void PrintStructure() const {
     std::cout << "ListaResponse:\n";
     std::cout << "\tnumber of users: " << this->num_users << "\n";
-    for(int i = 0; i < num_users; ++i) {
+
+    for (int i = 0; i < num_users; ++i)
       std::cout << "\tUser #" << i << ": " << this->user_names[i] << "\n";
-    }
   }
 };
 
@@ -220,7 +226,7 @@ struct BroadcastResponse : ServerResponse {
   std::string remitente;
 
   BroadcastResponse(): ServerResponse('B', kBroadcastResponse) {}
-  ~BroadcastResponse(){}
+  ~BroadcastResponse() {}
 
   void PrintStructure() const {
     std::cout << "BroadcastResponse:\n";
@@ -240,7 +246,7 @@ struct UploadFileResponse : ServerResponse {
   std::string file_data; // castear segun es imagen/video/etc
 
   UploadFileResponse() : ServerResponse('U', kUploadFileResponse) {}
-  ~UploadFileResponse(){}
+  ~UploadFileResponse() {}
 
   void PrintStructure() const {
     std::cout << "UploadFileResponse:\n";
@@ -289,18 +295,26 @@ struct ErrorResponse : ServerResponse {
 };
 
 
-std::shared_ptr<ClientRequest> ProcessRequest(std::string buffer) {
+std::shared_ptr<ClientRequest> ProcessRequest(int connectionFD) {
+  char buffer[1024] = {0};
+  read(connectionFD, buffer, 1);
   char action = buffer[0];
+  std::string s;
 
   switch (action) {
     case 'l': {
       auto lreq = std::make_shared<LoginRequest>();
 
-      lreq->tam_user = atoi(buffer.substr(1, 2).c_str());
-      lreq->tam_passwd = atoi(buffer.substr(3, 2).c_str());
+      read(connectionFD, buffer, 4);
+      s = buffer;
+      lreq->tam_user = stoi(s.substr(0, 2));
+      lreq->tam_passwd = stoi(s.substr(2, 2));
 
-      lreq->user = buffer.substr(5, lreq->tam_user);
-      lreq->passwd = buffer.substr(5 + lreq->tam_user, lreq->tam_passwd);
+      bzero(buffer, 4);
+      read(connectionFD, buffer, lreq->tam_user + lreq->tam_passwd);
+      s = buffer;
+      lreq->user = s.substr(0, lreq->tam_user);
+      lreq->passwd = s.substr(lreq->tam_user, lreq->tam_passwd);
 
       return lreq;
     }
@@ -313,42 +327,65 @@ std::shared_ptr<ClientRequest> ProcessRequest(std::string buffer) {
     case 'm': {
       auto mreq = std::make_shared<MessageRequest>();
 
-      mreq->tam_msg = atoi(buffer.substr(1, 3).c_str());
-      mreq->tam_destinatario = atoi(buffer.substr(4, 2).c_str());
+      read(connectionFD, buffer, 5);
+      s = buffer;
+      mreq->tam_msg = stoi(s.substr(0, 3));
+      mreq->tam_destinatario = stoi(s.substr(3, 2));
 
-      mreq->msg = buffer.substr(6, mreq->tam_msg);
-      mreq->destinatario = buffer.substr(6 + mreq->tam_msg, mreq->tam_destinatario);
+      bzero(buffer, 5);
+      read(connectionFD, buffer, mreq->tam_msg + mreq->tam_destinatario);
+      s = buffer;
+      mreq->msg = s.substr(0, mreq->tam_msg);
+      mreq->destinatario = s.substr(mreq->tam_msg, mreq->tam_destinatario);
+
       return mreq;
     }
 
     case 'b': {
       auto breq = std::make_shared<BroadcastRequest>();
+      read(connectionFD, buffer, 3);
+      breq->tam_msg = atoi(buffer);
 
-      breq->tam_msg = atoi(buffer.substr(1, 3).c_str());
+      bzero(buffer, 3);
+      read(connectionFD, buffer, breq->tam_msg);
+      breq->msg = buffer;
 
-      breq->msg = buffer.substr(4, breq->tam_msg);
       return breq;
     }
 
     case 'u': {
       auto ureq = std::make_shared<UploadFileRequest>();
 
-      ureq->tam_file_name = atoi(buffer.substr(1, 3).c_str());
-      ureq->tam_file_data = atoi(buffer.substr(4, 10).c_str());
-      ureq->tam_destinatario = atoi(buffer.substr(14, 2).c_str());
+      read(connectionFD, buffer, 15);
+      s = buffer;
+      ureq->tam_file_name = stoi(s.substr(0, 3));
+      ureq->tam_file_data = stoi(s.substr(3, 10));
+      ureq->tam_destinatario = stoi(s.substr(13, 2));
 
-      ureq->file_name = buffer.substr(16, ureq->tam_file_name);
-      //ureq->fileDataContenido; // depende el archivo
-      ureq->destinatario = buffer.substr(16 + ureq->tam_file_name + ureq->tam_file_data, ureq->tam_destinatario);
+      bzero(buffer, 15);
+      read(connectionFD, buffer, ureq->tam_file_name);
+      ureq->file_name  = buffer;
+
+      read(connectionFD, ureq->file_data, ureq->tam_file_data);
+      ureq->file_data = new char[ureq->tam_file_data];
+
+      bzero(buffer, ureq->tam_file_name);
+      read(connectionFD, buffer, ureq->tam_destinatario);
+      ureq->destinatario = buffer;
+
       return ureq;
     }
 
     case 'f': {
       auto freq = std::make_shared<File_ANRequest>();
-      
-      freq->tam_remitente = atoi(buffer.substr(1, 2).c_str());
-      freq->remitente = buffer.substr(3, freq->tam_remitente);
-      
+
+      read(connectionFD, buffer, 2);
+      freq->tam_remitente = atoi(buffer);
+
+      bzero(buffer, 2);
+      read(connectionFD, buffer, freq->tam_remitente);
+      freq->remitente = buffer;
+
       return freq;
     }
 
@@ -362,47 +399,77 @@ std::shared_ptr<ClientRequest> ProcessRequest(std::string buffer) {
   }
 }
 
-std::shared_ptr<ServerResponse> ProcessResponse(std::string buffer) {
+std::shared_ptr<ServerResponse> ProcessResponse(int connectionFD) {
+  char buffer[1024] = {0};
+  read(connectionFD, buffer, 1);
   char action = buffer[0];
+  std::string s;
 
   switch (action) {
     case 'L': {
       auto Lres = std::make_shared<LoginResponse>();
-      Lres->ok = buffer.substr(1, 2);
+
+      read(connectionFD, buffer, 2);
+      Lres->ok = buffer;
+
       return Lres;
     }
 
     case 'I': {
       auto Ires = std::make_shared<ListaResponse>();
 
-      Ires->num_users = atoi(buffer.substr(1, 2).c_str());
+      read(connectionFD, buffer, 4);
+      s = buffer;
+      Ires->num_users = stoi(s.substr(0, 2));
+
+      read(connectionFD, buffer, 2*Ires->num_users);
+      s = buffer;
+      short int total_length_names = 0;
+
       for (int i = 0; i < Ires->num_users; ++i) {
-        Ires->tam_user_names.push_back(atoi(buffer.substr(2 * i + 3, 2).c_str()));
+        int tam_user_name = stoi(s.substr(i*2, 2));
+        Ires->tam_user_names.push_back(tam_user_name);
+        total_length_names += tam_user_name;
       }
-      short int current_position = 2 * Ires->num_users + 3;
-      for (int i = 0; i < Ires->num_users; ++i) {
-        Ires->user_names.push_back(buffer.substr(current_position, Ires->tam_user_names[i]));
+
+      read(connectionFD, buffer, total_length_names);
+      s = buffer;
+
+      for (int i = 0, current_position = 0; i < Ires->num_users; ++i) {
+        Ires->user_names.push_back(s.substr(current_position, Ires->tam_user_names[i]));
         current_position += Ires->tam_user_names[i];
       }
+
       return Ires;
     }
 
     case 'M': {
       auto Mres = std::make_shared<MessageResponse>();
 
-      Mres->tam_msg = atoi(buffer.substr(1, 3).c_str());
-      Mres->tam_remitente = atoi(buffer.substr(4, 2).c_str());
-      
-      Mres->msg = buffer.substr(6, Mres->tam_msg);
-      Mres->remitente = buffer.substr(6 + Mres->tam_msg, Mres->tam_remitente);
-      
+      read(connectionFD, buffer, 5);
+      s = buffer;
+      Mres->tam_msg = stoi(s.substr(0, 3));
+      Mres->tam_remitente = stoi(s.substr(3, 2));
+
+      read(connectionFD, buffer, Mres->tam_msg + Mres->tam_remitente);
+      s = buffer;
+      Mres->msg = s.substr(0, Mres->tam_msg);
+      Mres->remitente = s.substr(Mres->tam_msg, Mres->tam_remitente);
+
       return Mres;
     }
 
     case 'F': {
       auto Fres = std::make_shared<File_ANResponse>();
-      Fres->tam_user_name = atoi(buffer.substr(1, 2).c_str());
-      Fres->user_name = buffer.substr(3, Fres->tam_user_name);
+      
+      read(connectionFD, buffer, 2);
+      Fres->tam_user_name = atoi(buffer);
+
+      bzero(buffer, 2);
+
+      read(connectionFD, buffer, Fres->tam_user_name);
+      Fres->user_name = buffer;
+
       return Fres;
     }
 
@@ -413,7 +480,10 @@ std::shared_ptr<ServerResponse> ProcessResponse(std::string buffer) {
 
     case 'E': {
       auto Eres = std::make_shared<ErrorResponse>();
-      Eres->message = buffer.substr(1);
+
+      read(connectionFD, buffer, 20);
+      Eres->message = buffer;
+
       return Eres;
     }
 
@@ -421,24 +491,5 @@ std::shared_ptr<ServerResponse> ProcessResponse(std::string buffer) {
       return nullptr;
   }
 }
-// static void ProcessResponse(char* buffer); //read -->
-// static void SendRequest(std::string request);// --> write
-// static void SendResponse(std::string response);
-//
-// static void ProcessLoginRequest();
-// static void ProcessListaRequest();
-// static void ProcessMessageRequest();
-// static void ProcessBroadcastRequest();
-// static void ProcessUploadFileRequest();
-// static void ProcessFile_ANRequest();
-// static void ProcessExitRequest();
-//
-// static void ProcessLoginResponse();
-// static void ProcessListaResponse();
-// static void ProcessMessageResponse();
-// static void ProcessBroadcastResponse();
-// static void ProcessUploadFileResponse();
-// static void ProcessFile_ANResponse();
-// static void ProcessExitResponse();
-// static void ProcessErrorResponse();
+
 }
