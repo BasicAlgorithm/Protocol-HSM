@@ -366,8 +366,8 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connectionFD) {
       read(connectionFD, buffer, ureq->tam_file_name);
       ureq->file_name  = buffer;
 
-      read(connectionFD, ureq->file_data, ureq->tam_file_data);
       ureq->file_data = new char[ureq->tam_file_data];
+      read(connectionFD, ureq->file_data, ureq->tam_file_data);
 
       bzero(buffer, ureq->tam_file_name);
       read(connectionFD, buffer, ureq->tam_destinatario);
