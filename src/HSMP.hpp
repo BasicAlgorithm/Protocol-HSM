@@ -12,8 +12,6 @@
 #include <unistd.h>
 #include <string.h>
 
-struct BroadcastResponse {};
-
 class User {
  public:
   std::string ip;
