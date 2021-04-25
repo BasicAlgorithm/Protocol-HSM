@@ -99,11 +99,11 @@ void server() {
     printf("\n(%s , %d) said : ", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
     
     // HSMP SERVER working
-    req = HSMP::ProcessRequest(recv_data);
+    req = HSMP::ProcessRequest(sock);
     req->PrintStructure();
     // TODO
     // We need something that prevent wrong request
-    req->ProcessThisRequest(users); // maybe is necessary pass who is the request doing, do you need it? me(Miguel) yes.
+    // req->ProcessThisRequest(users); // maybe is necessary pass who is the request doing, do you need it? me(Miguel) yes.
     // HSMP SERVER working
 
     bzero(recv_data,9999);
