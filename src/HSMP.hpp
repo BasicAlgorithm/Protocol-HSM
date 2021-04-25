@@ -75,7 +75,7 @@ struct LoginRequest : ClientRequest {
   LoginRequest() : ClientRequest('l', kLoginRequest) {}
   ~LoginRequest() {}
 
-  void PrintStructure() const {
+  void PrintStructure() const override {
     std::cout << "LoginRequest:\n";
     std::cout << "\ttam_user: " << this->tam_user << "\n";
     std::cout << "\ttam_passwd: " << this->tam_passwd << "\n";
@@ -88,7 +88,7 @@ struct ListaRequest : ClientRequest {
   ListaRequest() : ClientRequest('i', kListaRequest) {}
   ~ListaRequest() {}
 
-  void PrintStructure() const {
+  void PrintStructure() const override {
     std::cout << "ListaRequest" << std::endl;
   }
 };
@@ -102,7 +102,7 @@ struct MessageRequest : ClientRequest {
   MessageRequest() : ClientRequest('m', kMessageRequest) {}
   ~MessageRequest() {}
 
-  void PrintStructure() const {
+  void PrintStructure() const override {
     std::cout << "MessageRequest:\n";
     std::cout << "\ttam_msg: " << this->tam_msg << "\n";
     std::cout << "\ttam_destinatario: " << this->tam_destinatario << "\n";
@@ -118,7 +118,7 @@ struct BroadcastRequest : ClientRequest {
   BroadcastRequest() : ClientRequest('b', kBroadcastRequest) {}
   ~BroadcastRequest() {}
 
-  void PrintStructure() const {
+  void PrintStructure() const override {
     std::cout << "BroadcastRequest:\n";
     std::cout << "\tmensaje tam: " << this->tam_msg << "\n";
     std::cout << "\tmensaje: " << this->msg << std::endl;
@@ -158,7 +158,7 @@ struct UploadFileRequest : ClientRequest {
   UploadFileRequest() : ClientRequest('u', kUploadFileRequest) {}
   ~UploadFileRequest() {}
 
-  void PrintStructure() const {
+  void PrintStructure() const override {
     std::cout << "UploadFileRequest:\n";
     std::cout << "\tfile nombre tam: " << this->tam_file_name << "\n";
     std::cout << "\tfile nombre: " << this->file_name << "\n";
@@ -207,7 +207,7 @@ struct File_ANRequest : ClientRequest {
   File_ANRequest() : ClientRequest('f', kFile_ANRequest) {}
   ~File_ANRequest() {}
 
-  void PrintStructure() const {
+  void PrintStructure() const override {
     std::cout << "File_ANRequest:\n";
     std::cout << "\ttam_remitente: " << this->tam_remitente << "\n";
     std::cout << "\tremitente: " << this->remitente << std::endl;
@@ -218,7 +218,7 @@ struct ExitRequest : ClientRequest {
   ExitRequest() : ClientRequest('x', kExitRequest) {}
   ~ExitRequest() {}
 
-  void PrintStructure() const {
+  void PrintStructure() const override {
     std::cout << "ExitRequest" << std::endl;
   }
 };
@@ -247,7 +247,7 @@ struct LoginResponse : ServerResponse {
   LoginResponse() : ServerResponse('L', kLoginResponse) {}
   ~LoginResponse() {}
 
-  void PrintStructure() const {
+  void PrintStructure() const override {
     std::cout << "LoginResponse:\n";
     std::cout << "\tLogin state: " << this->ok << std::endl;
   }
@@ -261,7 +261,7 @@ struct ListaResponse : ServerResponse {
   ListaResponse() : ServerResponse('I', kListaResponse) {}
   ~ListaResponse() {}
 
-  void PrintStructure() const {
+  void PrintStructure() const override {
     std::cout << "ListaResponse:\n";
     std::cout << "\tnumber of users: " << this->num_users << "\n";
 
@@ -279,7 +279,7 @@ struct MessageResponse : ServerResponse {
   MessageResponse() : ServerResponse('M', kMessageResponse) {}
   ~MessageResponse() {}
 
-  void PrintStructure() const {
+  void PrintStructure() const override {
     std::cout << "MessageResponse:\n";
     std::cout << "\ttam_msg: " << this->tam_msg << "\n";
     std::cout << "\ttam_remitente: " << this->tam_remitente << "\n";
@@ -297,7 +297,7 @@ struct BroadcastResponse : ServerResponse {
   BroadcastResponse(): ServerResponse('B', kBroadcastResponse) {}
   ~BroadcastResponse() {}
 
-  void PrintStructure() const {
+  void PrintStructure() const override {
     std::cout << "BroadcastResponse:\n";
     std::cout << "\tmensaje tam: " << this->tam_msg << "\n";
     std::cout << "\tmensaje: " << this->msg << "\n";
@@ -344,7 +344,7 @@ struct UploadFileResponse : ServerResponse {
   UploadFileResponse() : ServerResponse('U', kUploadFileResponse) {}
   ~UploadFileResponse() {}
 
-  void PrintStructure() const {
+  void PrintStructure() const override {
     std::cout << "UploadFileResponse:\n";
     std::cout << "\tfile name tam: " << this->tam_file_name << "\n";
     std::cout << "\tfile: " << this-> file_name << "\n";
@@ -392,7 +392,7 @@ struct File_ANResponse : ServerResponse {
   File_ANResponse() : ServerResponse('F', kFile_ANResponse) {}
   ~File_ANResponse() {}
 
-  void PrintStructure() const {
+  void PrintStructure() const override {
     std::cout << "File_ANResponse:\n";
     std::cout << "\ttam_user_name: " << this->tam_user_name << "\n";
     std::cout << "\tuser_name: " << this->user_name << std::endl;
@@ -403,7 +403,7 @@ struct ExitResponse : ServerResponse {
   ExitResponse() : ServerResponse('X', kExitResponse) {}
   ~ExitResponse() {}
 
-  void PrintStructure() const {
+  void PrintStructure() const override {
     std::cout << "ExitResponse" << std::endl;
   }
 };
@@ -414,7 +414,7 @@ struct ErrorResponse : ServerResponse {
   ErrorResponse() : ServerResponse('E', kErrorResponse) {}
   ~ErrorResponse() {}
 
-  void PrintStructure() const {
+  void PrintStructure() const override {
     std::cout << "ErrorResponse:\n";
     std::cout << "\tmessage: " << this->message << std::endl;
   }
