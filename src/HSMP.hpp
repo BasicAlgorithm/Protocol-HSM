@@ -461,7 +461,7 @@ std::shared_ptr<ServerResponse> ProcessResponse(int connectionFD) {
 
     case 'F': {
       auto Fres = std::make_shared<File_ANResponse>();
-      
+
       read(connectionFD, buffer, 2);
       Fres->tam_user_name = atoi(buffer);
 
