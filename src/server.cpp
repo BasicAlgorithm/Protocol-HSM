@@ -7,7 +7,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <iostream>
-#include "HSMP.hpp"
+#include "HSMP/HSMPRequest.hpp"
+#include "HSMP/HSMPResponse.hpp"
 
 int main () {
   struct sockaddr_in stSockAddr;
