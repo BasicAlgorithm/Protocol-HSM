@@ -31,7 +31,6 @@ auto users = std::make_shared<std::list<User>>(firsts_users);
 
 void SendRequest(char *buffer) {
   int sock;
-  char send_data[1024];
   struct sockaddr_in server_addr;
   struct hostent *host;
   int n;
@@ -71,8 +70,8 @@ void client(){
 void server() {
 
   int sock;
-  ssize_t bytes_read, len = 1024;
-  socklen_t *addr_len;
+  ssize_t bytes_read;
+  socklen_t *addr_len = nullptr;
   struct sockaddr_in server_addr, client_addr;
 
   if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
