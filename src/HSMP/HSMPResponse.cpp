@@ -31,7 +31,7 @@ void BroadcastResponse::PrintStructure() const {
   std::cout << "\tremitente: " << this->remitente << std::endl;
 }
 
-void BroadcastResponse::ParseToCharBuffer() const {
+char *BroadcastResponse::ParseToCharBuffer() const {
   std::string parsed_structure("B");
 
   if (this->msg.length() <= 99) {
@@ -50,12 +50,15 @@ void BroadcastResponse::ParseToCharBuffer() const {
 
   parsed_structure += msg + remitente;
 
-  char buffer[1003];
+  char *buffer= new char[parsed_structure.length() + 1];
   std::size_t length = parsed_structure.copy(buffer, parsed_structure.length(),
                        0);
   buffer[length]='\0';
 
-  std::cout << "to send: " << buffer << std::endl;
+  
+  //std::cout << "to send: " << buffer << std::endl;
+
+  return buffer;
 }
 
 void UploadFileResponse::PrintStructure() const {
@@ -68,7 +71,7 @@ void UploadFileResponse::PrintStructure() const {
   std::cout << "\tremitente: " << this->remitente << std::endl;
 }
 
-void UploadFileResponse::ParseToCharBuffer() const {
+char *UploadFileResponse::ParseToCharBuffer() const {
   std::string parsed_structure("U");
 
   if (this->file_name.length() <= 99) {
@@ -90,12 +93,15 @@ void UploadFileResponse::ParseToCharBuffer() const {
   parsed_structure += std::to_string(this->remitente.length());
 
   parsed_structure += file_name + file_data + remitente;
-  char buffer[1003]; // it should be 16 + 999 + (10 times 9) + 99
+
+  char *buffer= new char[parsed_structure.length() + 1];
   std::size_t length = parsed_structure.copy(buffer, parsed_structure.length(),
                        0);
   buffer[length]='\0';
 
-  std::cout << "to send: " << buffer << std::endl;
+  //std::cout << "to send: " << buffer << std::endl;
+
+  return buffer;
 }
 
 void File_ANResponse::PrintStructure() const {

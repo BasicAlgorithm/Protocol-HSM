@@ -1,14 +1,33 @@
 #include <arpa/inet.h>
+#include <errno.h>
+#include <netdb.h>
 #include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <stdlib.h>
 #include <unistd.h>
+
 #include <iostream>
+#include <list>
+#include <vector>
+#include <map>
+#include <memory>
+
+#include "User.hpp"
 #include "HSMP/HSMPRequest.hpp"
 #include "HSMP/HSMPResponse.hpp"
+
+const int Klenght = 50;
+
+
+auto firsts_users = { User("127.0.0.1","Joaquin","gaa"),
+                      User("127.0.0.1","Mateo","gee"),
+                      User("127.0.0.1","Miguel","gii")
+                    };
+
+auto users = std::make_shared<std::list<User>>(firsts_users);
+
+std::shared_ptr<HSMP::ServerResponse> CreateResponse(std::shared_ptr<HSMP::ClientRequest> request);
 
 int main () {
   struct sockaddr_in stSockAddr;
@@ -38,6 +57,9 @@ int main () {
     exit(EXIT_FAILURE);
   }
 
+  printf("\nHSMP Waiting for client");
+  fflush(stdout);
+
   while (true) {
     int ConnectFD = accept(SocketFD, NULL, NULL);
 
@@ -50,9 +72,9 @@ int main () {
     std::shared_ptr<HSMP::ClientRequest> req = HSMP::ProcessRequest(ConnectFD);
     req->PrintStructure();
 
-    char writeBuffer[30];
-    std::cin >> writeBuffer;
-    write(ConnectFD, writeBuffer, strlen(writeBuffer));
+    // auto res = std::shared_ptr<HSMP::ServerResponse>();
+    // res = CreateResponse(req);
+    // write(ConnectFD, res->ParseToCharBuffer(), Klenght);
 
     shutdown(ConnectFD, SHUT_RDWR);
     close(ConnectFD);
@@ -60,4 +82,57 @@ int main () {
 
   close(SocketFD);
   return 0;
+}
+
+std::shared_ptr<HSMP::ServerResponse> CreateResponse(std::shared_ptr<HSMP::ClientRequest> request) {
+  
+  switch (request->type()) {
+
+    case HSMP::RequestType::kLoginRequest: {
+      auto lres = std::make_shared<HSMP::LoginResponse>();
+      
+      return lres;
+    }
+
+    case HSMP::RequestType::kListaRequest: {
+      auto ires = std::make_shared<HSMP::ListaResponse>();
+      
+      return ires;
+    }
+
+    case HSMP::RequestType::kMessageRequest: {
+      auto mres = std::make_shared<HSMP::MessageResponse>();
+      
+      return mres;
+    }
+
+    case HSMP::RequestType::kBroadcastRequest: {
+      auto bres = std::make_shared<HSMP::BroadcastResponse>();
+      
+      return bres;
+    }
+
+    case HSMP::RequestType::kUploadFileRequest: {
+      auto ures = std::make_shared<HSMP::UploadFileResponse>();
+      
+      return ures;
+    }
+
+    case HSMP::RequestType::kFile_ANRequest: {
+      auto fres = std::make_shared<HSMP::File_ANResponse>();
+      
+      return fres;
+    }
+
+    case HSMP::RequestType::kExitRequest: {
+      auto xres = std::make_shared<HSMP::ExitResponse>();
+      
+      return xres;
+    }
+
+    default: {
+      std::cout << "wrong input" << std::endl;
+      return nullptr;
+    }
+  }
 }
