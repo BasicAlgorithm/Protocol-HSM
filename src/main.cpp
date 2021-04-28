@@ -13,10 +13,14 @@
 #include <map>
 #include <memory>
 
-#include "HSMP.hpp"
+#include "User.hpp"
+#include "HSMP/HSMPRequest.hpp"
+#include "HSMP/HSMPResponse.hpp"
 
 typedef void (*function_ptr)();
 std::map<std::string, function_ptr> hsmp_commands;
+
+std::shared_ptr<HSMP::ClientRequest> CreateRequest();
 
 // first initial user to test
 auto firsts_users = {User("127.0.0.1","Joaquin","gaa"),User("127.0.0.1","Mateo","gee"),User("127.0.0.1","Miguel","gii"),};
@@ -27,7 +31,6 @@ auto users = std::make_shared<std::list<User>>(firsts_users);
 
 void SendRequest(char *buffer) {
   int sock;
-  char send_data[1024];
   struct sockaddr_in server_addr;
   struct hostent *host;
   int n;
@@ -53,7 +56,7 @@ void client(){
 
   // One thread client -> server
   auto req = std::shared_ptr<HSMP::ClientRequest>();
-  req = HSMP::CreateRequest();
+  req = CreateRequest();
   char *buffer_ready_to_send = req->ParseToCharBuffer();
   SendRequest(buffer_ready_to_send);
   
@@ -67,8 +70,8 @@ void client(){
 void server() {
 
   int sock;
-  ssize_t bytes_read, len = 1024;
-  socklen_t *addr_len;
+  ssize_t bytes_read;
+  socklen_t *addr_len = nullptr;
   struct sockaddr_in server_addr, client_addr;
 
   if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
@@ -99,11 +102,11 @@ void server() {
     printf("\n(%s , %d) said : ", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
     
     // HSMP SERVER working
-    req = HSMP::ProcessRequest(recv_data);
+    req = HSMP::ProcessRequest(sock);
     req->PrintStructure();
     // TODO
     // We need something that prevent wrong request
-    req->ProcessThisRequest(users); // maybe is necessary pass who is the request doing, do you need it? me(Miguel) yes.
+    // req->ProcessThisRequest(users); // maybe is necessary pass who is the request doing, do you need it? me(Miguel) yes.
     // HSMP SERVER working
 
     bzero(recv_data,9999);
@@ -190,4 +193,55 @@ int main(int argc, char *argv[])
   */
 
   return 0;
+}
+
+std::shared_ptr<HSMP::ClientRequest> CreateRequest() {
+  // TODO
+  // infinite while to create different requests without executing ./hsmp client
+  char accion;
+  printf("What do you want to do? [l] [i] [m] [b] [u] [x]\n");
+  std::cin >> accion;
+  std::cin.ignore();
+
+  switch (accion) {
+    case 'b': {
+      auto breq = std::make_shared<HSMP::BroadcastRequest>();
+      std::cout << "Creando Broadcast Request" << '\n';
+
+      char msgs[999];
+      std::cout << "what is the message to send: ";
+      std::cin.getline(msgs, 999, '\n');
+      breq->msg = std::string(msgs);
+
+      return breq;
+    }
+
+    case 'u': {
+      auto ureq = std::make_shared<HSMP::UploadFileRequest>();
+      std::cout << "Creando UploadFile Request" << '\n';
+
+      char buffer_name_file[999];
+      std::cout << "what is the file'name: ";
+      std::cin.getline(buffer_name_file, 999, '\n');
+      ureq->file_name = std::string(buffer_name_file);
+
+      char buffer_data_file[999]; // it should be 10 times 9
+      std::cout << "what is the file'data: ";
+      std::cin.getline(buffer_data_file, 999, '\n');
+      ureq->file_data = new char[strlen(buffer_data_file)];
+      strcpy(ureq->file_data, buffer_data_file);
+
+      char buffer_name_receptor[99];
+      std::cout << "what is the receptor'name: ";
+      std::cin.getline(buffer_name_receptor, 999, '\n');
+      ureq->destinatario = std::string(buffer_name_receptor);
+
+      return ureq;
+    }
+
+    default: {
+      std::cout << "wrong input" << std::endl;
+      return nullptr;
+    }
+  }
 }
