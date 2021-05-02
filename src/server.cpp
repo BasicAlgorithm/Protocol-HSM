@@ -19,17 +19,58 @@
 
 const int Klenght = 50;
 
+const std::string kMessageErrorPassword ("[HSMP] passwor_wrong");
+const std::string kMessageErrorPersonDisconnected ("[HSMP] person_discon");
+const std::string kMessageErrorPersonDontExist ("[HSMP] pers_no_exist");
+
 
 auto firsts_users = { User("127.0.0.1","Joaquin","gaa"),
                       User("127.0.0.1","Mateo","gee"),
-                      User("127.0.0.1","Miguel","gii")
+                      User("127.0.0.1","Miguel","gii"),
+                      User("127.0.0.1","ElPepe","ucsp"),
+                      User("127.0.0.1","guest1","guest1"),
+                      User("127.0.0.1","guest2","guest2"),
                     };
 
 auto users = std::make_shared<std::list<User>>(firsts_users);
+//auto logs = std::make_shared<std::list<std::string>>;
+std::list<std::string> logs;
+
 
 std::shared_ptr<HSMP::ServerResponse> CreateResponse(std::shared_ptr<HSMP::ClientRequest> request);
 
+void PrintLog(){
+  std::cout << "*********************************************" << std::endl;
+  std::cout << "*************** HSMProtocol *****************" << std::endl;
+  std::cout << "*********************************************" << std::endl;
+  std::cout << "***************** All User ******************" << std::endl;
+  std::cout << "*********************************************" << std::endl;
+  for (std::list<User>::iterator user = users->begin(); user != users->end(); ++user) {
+    std::cout << "\t" << user->GetName() << std::endl;
+  }
+  std::cout << "*********************************************" << std::endl;
+  std::cout << "**************** Active Users ***************" << std::endl;
+  std::cout << "*********************************************" << std::endl;
+  for (std::list<User>::iterator user = users->begin(); user != users->end(); ++user) {
+    if(user->IsOnline()) std::cout << "\t" << user->GetName() << std::endl;
+  }
+  std::cout << "*********************************************" << std::endl;
+  std::cout << "************** Last Request *****************" << std::endl;
+  std::cout << "*********************************************" << std::endl;
+  for (std::list<std::string>::iterator log = logs.begin(); log != logs.end(); ++log) {
+    std::cout << "\t" << *log << std::endl;
+  }
+  std::cout << "*********************************************" << std::endl;
+}
+
 int main () {
+
+  logs.push_back("List from Xian");
+  logs.push_back("Message from Xian to Lee");
+  logs.push_back("Message from Lee to Xian");
+  logs.push_back("UploadFile from Xian to Lee");
+  users->begin()->SetOffline();
+  
   struct sockaddr_in stSockAddr;
   int SocketFD = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -57,10 +98,13 @@ int main () {
     exit(EXIT_FAILURE);
   }
 
-  printf("\nHSMP Waiting for client");
+  //printf("\nHSMP Waiting for client");
   fflush(stdout);
 
   while (true) {
+
+    PrintLog();
+
     int ConnectFD = accept(SocketFD, NULL, NULL);
 
     if (0 > ConnectFD) {
@@ -69,11 +113,21 @@ int main () {
       exit(EXIT_FAILURE);
     }
 
+    // REQUEST CLIENT -> SERVER [PHASE 2]
     std::shared_ptr<HSMP::ClientRequest> req = HSMP::ProcessRequest(ConnectFD);
     req->PrintStructure();
 
+    printf("\n(%s , %d) said : ", 
+               inet_ntoa(stSockAddr.sin_addr),
+               ntohs(stSockAddr.sin_port));
+
+    // RESPONSE SERVER -> CLIENT [PHASE 3]
     // auto res = std::shared_ptr<HSMP::ServerResponse>();
     // res = CreateResponse(req);
+    // if (broadcast)
+    // for users
+    // if (message)
+    // -> remitente -> destinatario
     // write(ConnectFD, res->ParseToCharBuffer(), Klenght);
 
     shutdown(ConnectFD, SHUT_RDWR);
@@ -89,8 +143,22 @@ std::shared_ptr<HSMP::ServerResponse> CreateResponse(std::shared_ptr<HSMP::Clien
   switch (request->type()) {
 
     case HSMP::RequestType::kLoginRequest: {
+
       auto lres = std::make_shared<HSMP::LoginResponse>();
-      
+      for (std::list<User>::iterator user = users->begin(); user != users->end(); ++user) {
+        if (user->GetName() == request->user)
+          if (user->GetPassword() == request->passwd) {
+            lres->ok = "OK";
+            return lres;
+          } else {
+            auto l_e_res = std::make_shared<HSMP::ErrorResponse>();
+            l_e_res->message = kMessageErrorPassword;
+            return l_e_res;
+          }
+      }
+      User *new_user = new User("ip_client", request->user, request->passwd);
+      users->push_back(*new_user);
+      lres->ok = "OK";
       return lres;
     }
 
@@ -108,7 +176,7 @@ std::shared_ptr<HSMP::ServerResponse> CreateResponse(std::shared_ptr<HSMP::Clien
 
     case HSMP::RequestType::kBroadcastRequest: {
       auto bres = std::make_shared<HSMP::BroadcastResponse>();
-      
+      // write(ConnectFD, res->ParseToCharBuffer(), Klenght);
       return bres;
     }
 

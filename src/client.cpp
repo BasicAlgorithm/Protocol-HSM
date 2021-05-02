@@ -58,10 +58,11 @@ int main(void) {
   while(true) {
 
       if (fork() == 0)
-      {
+      { 
           while (1)
           {
 */
+              // REQUEST CLIENT -> SERVER [PHASE 1]
               auto req = std::shared_ptr<HSMP::ClientRequest>();
               req = CreateRequest();
               printf("message parseado: %s\n",req->ParseToCharBuffer());
@@ -72,6 +73,7 @@ int main(void) {
       {
           while (1)
           {
+              // RESPONSE SERVER -> CLIENT [PHASE 4]
               //connectionFD = read(SocketFD, buffer, Klenght);
               std::shared_ptr<HSMP::ServerResponse> res = HSMP::ProcessResponse(connectionFD);
               res->PrintStructure();

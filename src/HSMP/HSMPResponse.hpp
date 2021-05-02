@@ -13,10 +13,6 @@
 #include <unistd.h>
 #include <string.h>
 
-const std::string kMessageErrorPassword ("[HSMP] passwor_wrong");
-const std::string kMessageErrorPersonDisconnected ("[HSMP] person_discon");
-const std::string kMessageErrorPersonDontExist ("[HSMP] pers_no_exist");
-
 namespace HSMP {
 
 enum ResponseType {
