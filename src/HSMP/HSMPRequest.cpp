@@ -190,14 +190,17 @@ char* ExitRequest::ParseToCharBuffer() const {
   return buffer;
 }
 
-std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket) {
+std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket, 
+                                              int &bytes_received, 
+                                              std::list<std::string> &logs) {
   char buffer[1000] = {0};
-  recv(connection_socket, buffer, 1000, 0);
+  bytes_received = recv(connection_socket, buffer, 1000, 0);
 
   if (buffer[0] == '\0')
     return std::make_shared<ExitRequest>();
 
   printf("\n\tmensaje recibido: %s\n", buffer);
+  logs.push_back(buffer);
 
   char action = buffer[0];
   std::string s = buffer;

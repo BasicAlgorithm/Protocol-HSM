@@ -18,12 +18,18 @@
 #include "HSMP/HSMPResponse.hpp"
 
 const int Klenght = 50;
+bool login_correct = false;
+
 std::shared_ptr<HSMP::ClientRequest> CreateRequest();
 
 void WaitForResponses(int connection_socket) {
   char buffer[1000];
 
   while (1) {
+    // PHASE 04
+    //auto res = std::shared_ptr<HSMP::ServerResponse>();
+    //res = HSMP::ProcessResponse(connection_socket);
+    //res->PrintStructure();
     bzero(buffer, 1000);
     recv(connection_socket, buffer, 1000, 0);
 
@@ -76,6 +82,25 @@ int Connect(std::string ip, int port) {
 int main(void) {
   int connection_socket = Connect("127.0.0.1", 45000);
   std::thread response_listener(WaitForResponses, connection_socket);
+
+  while(!login_correct) {
+
+    auto lreq = std::make_shared<HSMP::LoginRequest>();
+    std::cout << "Creating Login Request" << '\n';
+
+    std::cout << "What is the username: ";
+    getline(std::cin, lreq->user);
+    std::cout << "What is the password: ";
+    getline(std::cin, lreq->passwd);
+
+    lreq->tam_user = lreq->user.size();
+    lreq->tam_passwd = lreq->passwd.size();
+
+    send(connection_socket, lreq->ParseToCharBuffer(), Klenght, 0);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+  }
+
 
   while (1) {
     auto req = std::shared_ptr<HSMP::ClientRequest>();

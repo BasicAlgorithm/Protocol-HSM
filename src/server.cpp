@@ -6,7 +6,6 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <thread>
 #include <sys/socket.h>
 
 #include <iostream>
@@ -14,16 +13,22 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <thread>
+#include <mutex>
+#include <iomanip>
 
 #include "User.hpp"
 #include "HSMP/HSMPRequest.hpp"
 #include "HSMP/HSMPResponse.hpp"
 
 const int Klenght = 50;
+const int KMaxLogs = 8;
+std::mutex mtx;
 
 const std::string kMessageErrorPassword ("[HSMP] password_wrong");
 const std::string kMessageErrorPersonDisconnected ("[HSMP] person_discon");
 const std::string kMessageErrorPersonDontExist ("[HSMP] pers_no_exist");
+const std::string kMessageErrorNoLogin ("[HSMP] not_login");
 
 auto firsts_users = { User("127.0.0.1", "Joaquin", "gaa"),
        User("127.0.0.1", "Mateo", "gee"),
@@ -39,52 +44,89 @@ std::list<std::string> logs;
 std::shared_ptr<HSMP::ServerResponse> CreateResponse(
   std::shared_ptr<HSMP::ClientRequest> request);
 
-void PrintLog() {
-  std::cout << "*********************************************" << std::endl;
-  std::cout << "*************** HSMProtocol *****************" << std::endl;
-  std::cout << "*********************************************" << std::endl;
-  std::cout << "***************** All User ******************" << std::endl;
-  std::cout << "*********************************************" << std::endl;
+void PrintScreenServer() {
+  system("clear");
+  std::cout << "+-------------------------------------------+" << std::endl;
+  std::cout << "|               HSMProtocol                 |" << std::endl;
+  std::cout << "+-------------------------------------------+" << std::endl;
+  std::cout << "|                All User                   |" << std::endl;
+  std::cout << "+-------------------------------------------+" << std::endl;
 
   for (std::list<User>::iterator user = users->begin(); user != users->end();
        ++user)
-    std::cout << "\t" << user->GetName() << std::endl;
+    std::cout << "|" << std::setw(10) << user->GetName() << std::setw(34) << "|" << std::endl;
 
-  std::cout << "*********************************************" << std::endl;
-  std::cout << "**************** Active Users ***************" << std::endl;
-  std::cout << "*********************************************" << std::endl;
+  std::cout << "+-------------------------------------------+" << std::endl;
+  std::cout << "|                Active Users               |" << std::endl;
+  std::cout << "+-------------------------------------------+" << std::endl;
+
+  std::cout << std::setw(1) << "| " 
+            << std::setw(10) << "USER"
+            << std::setw(15) << "IP"
+            << std::setw(8) << "FD"
+            << std::setw(8) << "QC" << " |" << std::endl;
 
   for (std::list<User>::iterator user = users->begin(); user != users->end();
        ++user) {
-    if (user->IsOnline()) std::cout << "\t" << user->GetName() << std::endl;
+    if (user->IsOnline()) std::cout <<  "| " 
+                                    << std::setw(10) << user->GetName() 
+                                    << std::setw(15) << user->GetIp()
+                                    << std::setw(8) << user->GetFileDescriptor()
+                                    << std::setw(8) << user->GetQuantityOfConnections() 
+                                    << " |" << std::endl;
   }
 
-  std::cout << "*********************************************" << std::endl;
-  std::cout << "************** Last Request *****************" << std::endl;
-  std::cout << "*********************************************" << std::endl;
-
+  std::cout << "+-------------------------------------------+" << std::endl;
+  std::cout << "|                Last Request               |" << std::endl;
+  std::cout << "+-------------------------------------------+" << std::endl;
+  if (logs.size() == 0) std::cout << "|\tno request yet"  << std::setw(23) << "" << std::endl;
+  if (logs.size() >= KMaxLogs) logs.pop_front();
   for (std::list<std::string>::iterator log = logs.begin(); log != logs.end();
        ++log)
-    std::cout << "\t" << *log << std::endl;
+    std::cout << "| " << std::setw(24) << *log << std::setw(8) << "" << std::endl;
 
-  std::cout << "*********************************************" << std::endl;
+  std::cout << "+-------------------------------------------+" << std::endl;
 }
 
 void AttendConnection(int client_socket, sockaddr_in client_addr) {
-  std::cout << "Processing requests for (" << inet_ntoa(client_addr.sin_addr) <<
-            ", " <<
-            ntohs(client_addr.sin_port) << ") in socket " << client_socket <<
-            std::endl;
+  //std::cout << "Processing requests for (" << inet_ntoa(client_addr.sin_addr) <<
+  //          ", " <<
+  //          ntohs(client_addr.sin_port) << ") in socket " << client_socket <<
+  //          std::endl;
+  int bytes_received;
+  bool login_correct = false;
+  std::string name_user;
 
+  
   while (1) {
-    auto req = HSMP::ProcessRequest(client_socket);
+    // PHASE 02
+    auto req = HSMP::ProcessRequest(client_socket, bytes_received, logs);
     req->PrintStructure();
 
-    if (req->type() == HSMP::kExitRequest) {
+    mtx.lock();
+    PrintScreenServer();
+    mtx.unlock();
+
+    if ((req->type() == HSMP::kExitRequest) || (bytes_received <= 0)) {
+      shutdown(client_socket, SHUT_RDWR);
       close(client_socket);
       break;
     }
 
+    // PHASE 03
+    // auto res = std::shared_ptr<HSMP::ServerResponse>();
+    // res = CreateResponse(req);
+    // if (req->type() == HSMP::kLoginResponse) {
+    //  login_correct = true;
+    // }
+    // if (req->type() == HSMP::ExitResponse) {
+    //  shutdown(client_socket, SHUT_RDWR);
+    //  close(client_socket);
+    //  break;
+    // }
+    // if (login_correct) {
+    //   send()
+    // }
     send(client_socket, "Request received", 50, 0);
   }
 }
@@ -115,14 +157,17 @@ void Listen(int port) {
     exit(EXIT_FAILURE);
   }
 
-  std::cout << "Listening on port " << port << std::endl;
+  //std::cout << "Listening on port " << port << std::endl;
+  PrintScreenServer();
 
   while (1) {
     sockaddr_in client_addr;
     socklen_t addr_len = sizeof(client_addr);
 
     int client_socket = accept(sock, (sockaddr*)&client_addr, &addr_len);
-    std::cout << "Accepted connection on socket " << client_socket << std::endl;
+    logs.push_back("Accepted connection FD " + std::to_string(client_socket));
+
+    PrintScreenServer();
 
     if (client_socket == -1) {
       perror("Problem with client connecting");
@@ -138,10 +183,10 @@ void Listen(int port) {
 }
 
 int main () {
-  logs.push_back("List from Xian");
-  logs.push_back("Message from Xian to Lee");
-  logs.push_back("Message from Lee to Xian");
-  logs.push_back("UploadFile from Xian to Lee");
+  //logs.push_back("List from Xian");
+  //logs.push_back("Message from Xian to Lee");
+  //logs.push_back("Message from Lee to Xian");
+  //logs.push_back("UploadFile from Xian to Lee");
   users->begin()->SetOffline();
 
   Listen(45000);

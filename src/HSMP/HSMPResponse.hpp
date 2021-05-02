@@ -119,6 +119,8 @@ struct File_ANResponse : ServerResponse {
 };
 
 struct ExitResponse : ServerResponse {
+  std::string msg;
+
   ExitResponse() : ServerResponse('X', kExitResponse) {}
   ~ExitResponse() {}
 

@@ -10,7 +10,7 @@ class User {
   std::string user_password_;
   int quantity_of_connections_;
   bool is_online_;
-  int file_descriptor;
+  int file_descriptor_;
 
  public:
 
@@ -19,11 +19,14 @@ class User {
 
   void OneMoreConnection();
   int GetQuantityOfConnections();
+  int GetFileDescriptor();
   std::string GetName();
   std::string GetPassword();
   bool IsOnline();
   void SetOnline();
   void SetOffline();
+  std::string GetIp();
+
 };
 
 void User::OneMoreConnection() {
@@ -54,3 +57,10 @@ void User::SetOffline() {
   is_online_ = 0;
 }
 
+std::string User::GetIp() {
+  return ip_;
+}
+
+int User::GetFileDescriptor() {
+  return file_descriptor_;
+}
