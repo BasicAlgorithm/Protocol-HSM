@@ -70,9 +70,10 @@ void PrintLog() {
   std::cout << "*********************************************" << std::endl;
 }
 
-void AttendConnection(int client_socket, sockaddr_in client_addr,
-                       socklen_t addr_len) {
-  std::cout << "Processing requests for client in socket " << client_socket <<
+void AttendConnection(int client_socket, sockaddr_in client_addr) {
+  std::cout << "Processing requests for (" << inet_ntoa(client_addr.sin_addr) <<
+            ", " <<
+            ntohs(client_addr.sin_port) << ") in socket " << client_socket <<
             std::endl;
 
   while (1) {
@@ -97,7 +98,6 @@ void Listen(int port) {
   }
 
   sockaddr_in server_addr;
-
   server_addr.sin_family = AF_INET;
   server_addr.sin_port = htons(port);
   server_addr.sin_addr.s_addr = INADDR_ANY;
@@ -130,8 +130,7 @@ void Listen(int port) {
       exit(1);
     }
 
-    std::thread clientThread(AttendConnection, client_socket, client_addr,
-                             addr_len);
+    std::thread clientThread(AttendConnection, client_socket, client_addr);
     clientThread.detach();
   }
 
