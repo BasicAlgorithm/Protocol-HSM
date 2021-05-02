@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <thread>
 
 #include <iostream>
 #include <list>
@@ -19,75 +20,76 @@
 const int Klenght = 50;
 std::shared_ptr<HSMP::ClientRequest> CreateRequest();
 
+void WaitForResponses(int connection_socket) {
+  char buffer[1000];
+
+  while (1) {
+    bzero(buffer, 1000);
+    recv(connection_socket, buffer, 1000, 0);
+
+    if (buffer[0] == '\0') {
+      std::cout << "CONNECTION TO SERVER ENDED. ANY FOLLOWING MESSAGES WILL FAIL" <<
+                std::endl;
+      close(connection_socket);
+      break;
+    }
+
+    printf("Server: %s\n", buffer);
+  }
+}
+
+int Connect(std::string ip, int port) {
+  int sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+  if (sock == -1) {
+    perror("Couldn't create socket");
+    exit(EXIT_FAILURE);
+  }
+
+  sockaddr_in server_addr;
+  memset(&server_addr, 0, sizeof(sockaddr_in));
+
+  server_addr.sin_family = AF_INET;
+  server_addr.sin_port = htons(port);
+  int Res = inet_pton(AF_INET, ip.c_str(), &server_addr.sin_addr);
+
+  if (Res < 0) {
+    perror("Error: First parameter is not a valid address family");
+    close(sock);
+    exit(EXIT_FAILURE);
+  }
+  else if (Res == 0) {
+    perror("char string (second parameter does not contain valid ip address");
+    close(sock);
+    exit(EXIT_FAILURE);
+  }
+
+  if (connect(sock, (const sockaddr*)&server_addr, sizeof(sockaddr_in)) == -1) {
+    perror("Connection failed");
+    close(sock);
+    exit(EXIT_FAILURE);
+  }
+
+  return sock;
+}
+
 int main(void) {
-  struct sockaddr_in stSockAddr;
-  int Res;
-  int SocketFD = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-  int n;
+  int connection_socket = Connect("127.0.0.1", 45000);
+  std::thread response_listener(WaitForResponses, connection_socket);
 
-  if (-1 == SocketFD) {
-    perror("cannot create socket");
-    exit(EXIT_FAILURE);
+  while (1) {
+    auto req = std::shared_ptr<HSMP::ClientRequest>();
+    req = CreateRequest();
+    printf("mensaje parseado: %s\n", req->ParseToCharBuffer());
+    send(connection_socket, req->ParseToCharBuffer(), Klenght, 0);
   }
 
-  memset(&stSockAddr, 0, sizeof(struct sockaddr_in));
-
-  stSockAddr.sin_family = AF_INET;
-  stSockAddr.sin_port = htons(45000);
-  Res = inet_pton(AF_INET, "127.0.0.1", &stSockAddr.sin_addr);
-
-  if (0 > Res) {
-    perror("error: first parameter is not a valid address family");
-    close(SocketFD);
-    exit(EXIT_FAILURE);
-  } else if (0 == Res) {
-    perror("char string (second parameter does not contain valid ipaddress");
-    close(SocketFD);
-    exit(EXIT_FAILURE);
-  }
-
-  if (-1 == connect(SocketFD, (const struct sockaddr *)&stSockAddr,
-                    sizeof(struct sockaddr_in))) {
-    perror("connect failed");
-    close(SocketFD);
-    exit(EXIT_FAILURE);
-  }
-  /*
-  int connectionFD;
-  while(true) {
-
-      if (fork() == 0)
-      { 
-          while (1)
-          {
-*/
-              // REQUEST CLIENT -> SERVER [PHASE 1]
-              auto req = std::shared_ptr<HSMP::ClientRequest>();
-              req = CreateRequest();
-              printf("message parseado: %s\n",req->ParseToCharBuffer());
-              n = write(SocketFD, req->ParseToCharBuffer(), Klenght);
-  /*        }
-      }
-      else
-      {
-          while (1)
-          {
-              // RESPONSE SERVER -> CLIENT [PHASE 4]
-              //connectionFD = read(SocketFD, buffer, Klenght);
-              std::shared_ptr<HSMP::ServerResponse> res = HSMP::ProcessResponse(connectionFD);
-              res->PrintStructure();
-          }
-      }
-  }*/
-
-  shutdown(SocketFD, SHUT_RDWR);
-
-  close(SocketFD);
+  shutdown(connection_socket, SHUT_RDWR);
+  close(connection_socket);
   return 0;
 }
 
 std::shared_ptr<HSMP::ClientRequest> CreateRequest() {
-
   char accion;
   printf("What do you want to do? [l] [i] [m] [b] [u] [f] [x]\n");
 

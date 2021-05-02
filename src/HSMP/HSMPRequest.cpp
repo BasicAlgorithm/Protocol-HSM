@@ -200,7 +200,7 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket) {
   printf("\n\tmensaje recibido: %s\n", buffer);
 
   char action = buffer[0];
-  std::string s;
+  std::string s = buffer;
 
   switch (action) {
     case 'l': {

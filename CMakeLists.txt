@@ -10,8 +10,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set(HSMP_SOURCES src/HSMP/HSMPRequest.cpp src/HSMP/HSMPResponse.cpp)
 
-add_executable(hsmp src/main.cpp ${HSMP_SOURCES})
-
 add_executable(server src/server.cpp ${HSMP_SOURCES})
+target_link_libraries(server pthread)
 
 add_executable(client src/client.cpp ${HSMP_SOURCES})
+target_link_libraries(client pthread)
