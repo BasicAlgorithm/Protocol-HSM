@@ -103,28 +103,26 @@ void ExitRequest::PrintStructure() const {
   std::cout << "ExitRequest" << std::endl;
 }
 
-std::shared_ptr<ClientRequest> ProcessRequest(int connectionFD) {
-  char buffer[1024] = {0};
-  read(connectionFD, buffer, 1024);
-  printf("\n\tmessage recibido: %s\n",buffer);
+std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket) {
+  char buffer[1000] = {0};
+  recv(connection_socket, buffer, 1000, 0);
+  if (buffer[0] == '\0')
+    return std::make_shared<ExitRequest>();
+
+  printf("\n\tmensaje recibido: %s\n", buffer);
 
   char action = buffer[0];
-  std::string s;
+  std::string s = buffer;
 
   switch (action) {
     case 'l': {
       auto lreq = std::make_shared<LoginRequest>();
 
-      read(connectionFD, buffer, 4);
-      s = buffer;
-      lreq->tam_user = stoi(s.substr(0, 2));
-      lreq->tam_passwd = stoi(s.substr(2, 2));
+      lreq->tam_user = stoi(s.substr(1, 2));
+      lreq->tam_passwd = stoi(s.substr(3, 2));
 
-      bzero(buffer, 4);
-      read(connectionFD, buffer, lreq->tam_user + lreq->tam_passwd);
-      s = buffer;
-      lreq->user = s.substr(0, lreq->tam_user);
-      lreq->passwd = s.substr(lreq->tam_user, lreq->tam_passwd);
+      lreq->user = s.substr(5, lreq->tam_user);
+      lreq->passwd = s.substr(5 + lreq->tam_user, lreq->tam_passwd);
 
       return lreq;
     }
@@ -137,13 +135,11 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connectionFD) {
     case 'm': {
       auto mreq = std::make_shared<MessageRequest>();
 
-      read(connectionFD, buffer, 5);
       s = buffer;
       mreq->tam_msg = stoi(s.substr(0, 3));
       mreq->tam_destinatario = stoi(s.substr(3, 2));
 
       bzero(buffer, 5);
-      read(connectionFD, buffer, mreq->tam_msg + mreq->tam_destinatario);
       s = buffer;
       mreq->msg = s.substr(0, mreq->tam_msg);
       mreq->destinatario = s.substr(mreq->tam_msg, mreq->tam_destinatario);
@@ -153,13 +149,9 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connectionFD) {
 
     case 'b': {
       auto breq = std::make_shared<BroadcastRequest>();
-      read(connectionFD, buffer, 3);
-      s = buffer;
-      breq->tam_msg = stoi(s.substr(1,3));
 
-      bzero(buffer, 3);
-      read(connectionFD, buffer, breq->tam_msg + 3);
-      breq->msg = buffer;
+      breq->tam_msg = stoi(s.substr(1,3));
+      breq->msg = s.substr(4);
 
       return breq;
     }
@@ -167,22 +159,14 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connectionFD) {
     case 'u': {
       auto ureq = std::make_shared<UploadFileRequest>();
 
-      read(connectionFD, buffer, 15);
-      s = buffer;
       ureq->tam_file_name = stoi(s.substr(1, 3));
       ureq->tam_file_data = stoi(s.substr(4, 10));
       ureq->tam_destinatario = stoi(s.substr(14, 2));
 
-      bzero(buffer, 15);
-      read(connectionFD, buffer, ureq->tam_file_name);
-      ureq->file_name = buffer;
-
+      ureq->file_name = s.substr(16, ureq->tam_file_name);
       ureq->file_data = new char[ureq->tam_file_data];
-      read(connectionFD, ureq->file_data, ureq->tam_file_data);
-
-      bzero(buffer, ureq->tam_file_name);
-      read(connectionFD, buffer, ureq->tam_destinatario);
-      ureq->destinatario = buffer;
+      strcpy(ureq->file_data, s.substr(16 + ureq->tam_file_name, ureq->tam_file_data).c_str());
+      ureq->destinatario = s.substr(16 + ureq->tam_file_name + ureq->tam_file_data, ureq->tam_destinatario);
 
       return ureq;
     }
@@ -190,12 +174,8 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connectionFD) {
     case 'f': {
       auto freq = std::make_shared<File_ANRequest>();
 
-      read(connectionFD, buffer, 2);
       freq->tam_remitente = atoi(buffer);
 
-      bzero(buffer, 2);
-      read(connectionFD, buffer, freq->tam_remitente);
-      freq->remitente = buffer;
 
       return freq;
     }

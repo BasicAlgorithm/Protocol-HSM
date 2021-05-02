@@ -78,6 +78,12 @@ void AttendConnection(int client_socket, sockaddr_in client_addr,
   while (1) {
     auto req = HSMP::ProcessRequest(client_socket);
     req->PrintStructure();
+
+    if (req->type() == HSMP::kExitRequest) {
+      close(client_socket);
+      break;
+    }
+
     send(client_socket, "Request received", 50, 0);
   }
 }
