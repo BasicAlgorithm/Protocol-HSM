@@ -19,7 +19,6 @@
 const int Klenght = 50;
 std::shared_ptr<HSMP::ClientRequest> CreateRequest();
 
-
 int main(void) {
   struct sockaddr_in stSockAddr;
   int Res;
@@ -90,48 +89,98 @@ int main(void) {
 std::shared_ptr<HSMP::ClientRequest> CreateRequest() {
 
   char accion;
-  printf("What do you want to do? [l] [i] [m] [b] [u] [x]\n");
+  printf("What do you want to do? [l] [i] [m] [b] [u] [f] [x]\n");
+
   std::cin >> accion;
   std::cin.ignore();
 
   switch (accion) {
+    case 'l': {
+      auto lreq = std::make_shared<HSMP::LoginRequest>();
+      std::cout << "Creating Login Request" << '\n';
+
+      std::cout << "What is the username: ";
+      getline(std::cin, lreq->user);
+      std::cout << "What is the password: ";
+      getline(std::cin, lreq->passwd);
+
+      lreq->tam_user = lreq->user.size();
+      lreq->tam_passwd = lreq->passwd.size();
+
+      return lreq;
+    }
+
+    case 'i': {
+      auto ireq = std::make_shared<HSMP::ListaRequest>();
+      std::cout << "Creating Lista Request" << '\n';
+      return ireq;
+    }
+
+    case 'm': {
+      auto mreq = std::make_shared<HSMP::MessageRequest>();
+
+      std::cout << "Creating Message Request" << '\n';
+
+      std::cout << "What is the message: ";
+      getline(std::cin, mreq->msg);
+      std::cout << "Who is the recipient: ";
+      getline(std::cin, mreq->destinatario);
+
+      mreq->tam_msg = mreq->msg.size();
+      mreq->tam_destinatario = mreq->destinatario.size();
+
+      return mreq;
+    }
+
     case 'b': {
       auto breq = std::make_shared<HSMP::BroadcastRequest>();
-      std::cout << "Creando Broadcast Request" << '\n';
+      std::cout << "Creating Broadcast Request" << '\n';
 
-      char msgs[999];
-      std::cout << "what is the message to send: ";
-      std::cin.getline(msgs, 999, '\n');
-      breq->msg = std::string(msgs);
+      std::cout << "What is the message to send: ";
+      getline(std::cin, breq->msg);
 
       return breq;
     }
 
     case 'u': {
       auto ureq = std::make_shared<HSMP::UploadFileRequest>();
-      std::cout << "Creando UploadFile Request" << '\n';
+      std::cout << "Creating UploadFile Request" << '\n';
 
-      char buffer_name_file[999];
-      std::cout << "what is the file'name: ";
-      std::cin.getline(buffer_name_file, 999, '\n');
-      ureq->file_name = std::string(buffer_name_file);
+      std::cout << "What is the filename: ";
+      getline(std::cin, ureq->file_name);
+      ureq->tam_file_name = ureq->file_name.size();
 
-      char buffer_data_file[999]; // it should be 10 times 9
-      std::cout << "what is the file'data: ";
-      std::cin.getline(buffer_data_file, 999, '\n');
-      ureq->file_data = new char[strlen(buffer_data_file)];
-      strcpy(ureq->file_data, buffer_data_file);
+      ureq->file_data = new char[2];
+      ureq->file_data[0] = '0';
+      ureq->file_data[1] = '\0';
+      ureq->tam_file_data = 0;
 
-      char buffer_name_receptor[99];
-      std::cout << "what is the receptor'name: ";
-      std::cin.getline(buffer_name_receptor, 99, '\n');
-      ureq->destinatario = std::string(buffer_name_receptor);
+      std::cout << "What is the receptor's name: ";
+      getline(std::cin, ureq->destinatario);
+      ureq->tam_destinatario = ureq->destinatario.size();
 
       return ureq;
     }
 
+    case 'f': {
+      auto freq = std::make_shared<HSMP::File_ANRequest>();
+      std::cout << "Creating FileAcceptReject Request" << '\n';
+
+      std::cout << "Who is the recipient: ";
+      getline(std::cin, freq->remitente);
+      freq->tam_remitente = freq->remitente.size();
+
+      return freq;
+    }
+
+    case 'x': {
+      auto xreq = std::make_shared<HSMP::ExitRequest>();
+      std::cout << "Creating Exit Request" << '\n';
+      return xreq;
+    }
+
     default: {
-      std::cout << "wrong input" << std::endl;
+      std::cout << "Wrong input" << std::endl;
       return nullptr;
     }
   }

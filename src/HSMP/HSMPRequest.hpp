@@ -54,6 +54,7 @@ struct LoginRequest : ClientRequest {
   ~LoginRequest() {}
 
   void PrintStructure() const override;
+  char* ParseToCharBuffer() const override;
 };
 
 struct ListaRequest : ClientRequest {
@@ -61,6 +62,7 @@ struct ListaRequest : ClientRequest {
   ~ListaRequest() {}
 
   void PrintStructure() const override;
+  char* ParseToCharBuffer() const override;
 };
 
 struct MessageRequest : ClientRequest {
@@ -73,6 +75,7 @@ struct MessageRequest : ClientRequest {
   ~MessageRequest() {}
 
   void PrintStructure() const override;
+  char* ParseToCharBuffer() const override;
 };
 
 struct BroadcastRequest : ClientRequest {
@@ -83,7 +86,6 @@ struct BroadcastRequest : ClientRequest {
   ~BroadcastRequest() {}
 
   void PrintStructure() const override;
-
   char* ParseToCharBuffer() const override;
 };
 
@@ -111,6 +113,7 @@ struct File_ANRequest : ClientRequest {
   ~File_ANRequest() {}
 
   void PrintStructure() const override;
+  char* ParseToCharBuffer() const override;
 };
 
 struct ExitRequest : ClientRequest {
@@ -118,6 +121,7 @@ struct ExitRequest : ClientRequest {
   ~ExitRequest() {}
 
   void PrintStructure() const override;
+  char* ParseToCharBuffer() const override;
 };
 
 std::shared_ptr<ClientRequest> ProcessRequest(int connectionFD);
