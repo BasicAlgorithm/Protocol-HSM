@@ -10,8 +10,42 @@ void LoginRequest::PrintStructure() const {
   std::cout << "\tpasswd: " << this->passwd << std::endl;
 }
 
+char* LoginRequest::ParseToCharBuffer() const {
+  std::string parsed_structure ("l");
+
+  if (this->tam_user <= 9)
+    parsed_structure+="0";
+
+  parsed_structure += std::to_string(this->tam_user);
+
+  if (this->tam_passwd <= 9)
+    parsed_structure+="0";
+
+  parsed_structure += std::to_string(this->tam_passwd);
+
+  // adding body
+  parsed_structure += this->user + this->passwd;
+  char* buffer= new char[parsed_structure.length() + 1];
+  std::size_t length = parsed_structure.copy(buffer, parsed_structure.length(),
+                       0);
+  buffer[length] = '\0';
+
+  std::cout << "\tLoginRequest sending to server: " << buffer << std::endl;
+
+  return buffer;
+}
+
 void ListaRequest::PrintStructure() const {
   std::cout << "ListaRequest" << std::endl;
+}
+
+char* ListaRequest::ParseToCharBuffer() const {
+  char* buffer = new char[2];
+  buffer[0] = 'i';
+  buffer[1] = '\0';
+  // std::cout << "\tListaRequest sending to server: " << buffer << std::endl;
+
+  return buffer;
 }
 
 void MessageRequest::PrintStructure() const {
@@ -20,6 +54,32 @@ void MessageRequest::PrintStructure() const {
   std::cout << "\ttam_destinatario: " << this->tam_destinatario << "\n";
   std::cout << "\tmsg: " << this->msg << "\n";
   std::cout << "\tdestinatario: " << this->destinatario << std::endl;
+}
+
+char* MessageRequest::ParseToCharBuffer() const {
+  std::string parsed_structure("m");
+
+  if (this->tam_msg <= 9)
+    parsed_structure += "00";
+  else if (this->tam_msg <= 99)
+    parsed_structure += "0";
+
+  parsed_structure += std::to_string(this->tam_msg);
+
+  if (this->tam_destinatario <= 9)
+    parsed_structure += "0";
+
+  parsed_structure += std::to_string(this->tam_destinatario);
+
+  parsed_structure += this->msg + this->destinatario;
+  // std::cout << "\tMessageRequest sending to server: " << parsed_structure <<
+  // std::endl;
+
+  char* buffer = new char[parsed_structure.size() + 1];
+  std::size_t length = parsed_structure.copy(buffer, parsed_structure.length(),
+                       0);
+  buffer[length] = '\0';
+  return buffer;
 }
 
 void BroadcastRequest::PrintStructure() const {
@@ -99,14 +159,45 @@ void File_ANRequest::PrintStructure() const {
   std::cout << "\tremitente: " << this->remitente << std::endl;
 }
 
+char* File_ANRequest::ParseToCharBuffer() const {
+  std::string parsed_structure("f");
+
+  if (this->tam_remitente < 9)
+    parsed_structure += "0";
+
+  parsed_structure += std::to_string(this->tam_remitente);
+
+  parsed_structure += this->remitente;
+  // std::cout << "\tFile_ANRequest sending to server: " << parsed_structure <<
+  // std::endl;
+
+  char* buffer= new char[parsed_structure.length() + 1];
+  std::size_t length = parsed_structure.copy(buffer, parsed_structure.length(),
+                       0);
+  buffer[length]='\0';
+  return buffer;
+}
+
 void ExitRequest::PrintStructure() const {
   std::cout << "ExitRequest" << std::endl;
 }
 
-std::shared_ptr<ClientRequest> ProcessRequest(int connectionFD) {
-  char buffer[1024] = {0};
-  read(connectionFD, buffer, 1024);
-  printf("\n\tmessage recibido: %s\n",buffer);
+char* ExitRequest::ParseToCharBuffer() const {
+  char* buffer = new char[2];
+  buffer[0] = 'x';
+  buffer[1] = '\0';
+  // std::cout << "\tExitRequest sending to server: " << buffer << std::endl;
+  return buffer;
+}
+
+std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket) {
+  char buffer[1000] = {0};
+  recv(connection_socket, buffer, 1000, 0);
+
+  if (buffer[0] == '\0')
+    return std::make_shared<ExitRequest>();
+
+  printf("\n\tmensaje recibido: %s\n", buffer);
 
   char action = buffer[0];
   std::string s;
@@ -115,16 +206,11 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connectionFD) {
     case 'l': {
       auto lreq = std::make_shared<LoginRequest>();
 
-      read(connectionFD, buffer, 4);
-      s = buffer;
-      lreq->tam_user = stoi(s.substr(0, 2));
-      lreq->tam_passwd = stoi(s.substr(2, 2));
+      lreq->tam_user = stoi(s.substr(1, 2));
+      lreq->tam_passwd = stoi(s.substr(3, 2));
 
-      bzero(buffer, 4);
-      read(connectionFD, buffer, lreq->tam_user + lreq->tam_passwd);
-      s = buffer;
-      lreq->user = s.substr(0, lreq->tam_user);
-      lreq->passwd = s.substr(lreq->tam_user, lreq->tam_passwd);
+      lreq->user = s.substr(5, lreq->tam_user);
+      lreq->passwd = s.substr(5 + lreq->tam_user, lreq->tam_passwd);
 
       return lreq;
     }
@@ -137,29 +223,20 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connectionFD) {
     case 'm': {
       auto mreq = std::make_shared<MessageRequest>();
 
-      read(connectionFD, buffer, 5);
-      s = buffer;
-      mreq->tam_msg = stoi(s.substr(0, 3));
-      mreq->tam_destinatario = stoi(s.substr(3, 2));
+      mreq->tam_msg = stoi(s.substr(1, 3));
+      mreq->tam_destinatario = stoi(s.substr(4, 2));
 
-      bzero(buffer, 5);
-      read(connectionFD, buffer, mreq->tam_msg + mreq->tam_destinatario);
-      s = buffer;
-      mreq->msg = s.substr(0, mreq->tam_msg);
-      mreq->destinatario = s.substr(mreq->tam_msg, mreq->tam_destinatario);
+      mreq->msg = s.substr(6, mreq->tam_msg);
+      mreq->destinatario = s.substr(6 + mreq->tam_msg, mreq->tam_destinatario);
 
       return mreq;
     }
 
     case 'b': {
       auto breq = std::make_shared<BroadcastRequest>();
-      read(connectionFD, buffer, 3);
-      s = buffer;
-      breq->tam_msg = stoi(s.substr(1,3));
 
-      bzero(buffer, 3);
-      read(connectionFD, buffer, breq->tam_msg + 3);
-      breq->msg = buffer;
+      breq->tam_msg = stoi(s.substr(1, 3));
+      breq->msg = s.substr(4);
 
       return breq;
     }
@@ -167,22 +244,18 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connectionFD) {
     case 'u': {
       auto ureq = std::make_shared<UploadFileRequest>();
 
-      read(connectionFD, buffer, 15);
-      s = buffer;
       ureq->tam_file_name = stoi(s.substr(1, 3));
       ureq->tam_file_data = stoi(s.substr(4, 10));
       ureq->tam_destinatario = stoi(s.substr(14, 2));
 
-      bzero(buffer, 15);
-      read(connectionFD, buffer, ureq->tam_file_name);
-      ureq->file_name = buffer;
+      ureq->file_name = s.substr(16, ureq->tam_file_name);
 
       ureq->file_data = new char[ureq->tam_file_data];
-      read(connectionFD, ureq->file_data, ureq->tam_file_data);
+      strcpy(ureq->file_data, s.substr(16 + ureq->tam_file_name,
+                                       ureq->tam_file_data).c_str());
 
-      bzero(buffer, ureq->tam_file_name);
-      read(connectionFD, buffer, ureq->tam_destinatario);
-      ureq->destinatario = buffer;
+      ureq->destinatario = s.substr(16 + ureq->tam_file_name + ureq->tam_file_data,
+                                    ureq->tam_destinatario);
 
       return ureq;
     }
@@ -190,12 +263,8 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connectionFD) {
     case 'f': {
       auto freq = std::make_shared<File_ANRequest>();
 
-      read(connectionFD, buffer, 2);
-      freq->tam_remitente = atoi(buffer);
-
-      bzero(buffer, 2);
-      read(connectionFD, buffer, freq->tam_remitente);
-      freq->remitente = buffer;
+      freq->tam_remitente = stoi(s.substr(1, 2));
+      freq->remitente = s.substr(3, freq->tam_remitente);
 
       return freq;
     }
