@@ -103,7 +103,7 @@ int main () {
 
   while (true) {
 
-    PrintLog();
+    //PrintLog();
 
     int ConnectFD = accept(SocketFD, NULL, NULL);
 
@@ -117,10 +117,7 @@ int main () {
     std::shared_ptr<HSMP::ClientRequest> req = HSMP::ProcessRequest(ConnectFD);
     req->PrintStructure();
 
-    printf("\n(%s , %d) said : ", 
-               inet_ntoa(stSockAddr.sin_addr),
-               ntohs(stSockAddr.sin_port));
-
+ 
     // RESPONSE SERVER -> CLIENT [PHASE 3]
     // auto res = std::shared_ptr<HSMP::ServerResponse>();
     // res = CreateResponse(req);
@@ -145,20 +142,7 @@ std::shared_ptr<HSMP::ServerResponse> CreateResponse(std::shared_ptr<HSMP::Clien
     case HSMP::RequestType::kLoginRequest: {
 
       auto lres = std::make_shared<HSMP::LoginResponse>();
-      for (std::list<User>::iterator user = users->begin(); user != users->end(); ++user) {
-        if (user->GetName() == request->user)
-          if (user->GetPassword() == request->passwd) {
-            lres->ok = "OK";
-            return lres;
-          } else {
-            auto l_e_res = std::make_shared<HSMP::ErrorResponse>();
-            l_e_res->message = kMessageErrorPassword;
-            return l_e_res;
-          }
-      }
-      User *new_user = new User("ip_client", request->user, request->passwd);
-      users->push_back(*new_user);
-      lres->ok = "OK";
+      
       return lres;
     }
 
