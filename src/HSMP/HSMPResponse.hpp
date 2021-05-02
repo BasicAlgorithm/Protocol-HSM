@@ -38,7 +38,9 @@ struct ServerResponse {
   };
 
   virtual void PrintStructure() const {};
-  virtual void ParseToCharBuffer() const {};
+  virtual char* ParseToCharBuffer() const {
+    return nullptr;
+  };
 
  private:
   ResponseType _type;
@@ -87,7 +89,7 @@ struct BroadcastResponse : ServerResponse {
 
   void PrintStructure() const override;
 
-  void ParseToCharBuffer() const override;
+  char *ParseToCharBuffer() const override;
 };
 
 struct UploadFileResponse : ServerResponse {
@@ -103,7 +105,7 @@ struct UploadFileResponse : ServerResponse {
 
   void PrintStructure() const override;
 
-  void ParseToCharBuffer() const override;
+  char *ParseToCharBuffer() const override;
 };
 
 struct File_ANResponse : ServerResponse {

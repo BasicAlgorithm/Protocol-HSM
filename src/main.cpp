@@ -27,7 +27,7 @@ auto firsts_users = {User("127.0.0.1","Joaquin","gaa"),User("127.0.0.1","Mateo",
 auto users = std::make_shared<std::list<User>>(firsts_users);
 
 // TODO
-// Way to identify who is send request because some of response is necessary
+// Way to identify who is send request because some responses need it.
 
 void SendRequest(char *buffer) {
   int sock;
@@ -62,7 +62,7 @@ void client(){
   
   // Other thread async server -> client
   //std::shared_ptr<HSMP::ServerResponse> res;
-  //res = HSMP::ProcessResponse("B01003HolaATodosLee");
+  //res = HSMP::ProcessResponse(int connectionFD);
   //res->PrintStructure();
 
 }
@@ -104,6 +104,7 @@ void server() {
     // HSMP SERVER working
     req = HSMP::ProcessRequest(sock);
     req->PrintStructure();
+    
     // TODO
     // We need something that prevent wrong request
     // req->ProcessThisRequest(users); // maybe is necessary pass who is the request doing, do you need it? me(Miguel) yes.

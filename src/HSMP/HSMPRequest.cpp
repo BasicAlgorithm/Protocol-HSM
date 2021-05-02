@@ -56,7 +56,7 @@ void UploadFileRequest::PrintStructure() const {
   std::cout << "\tfile nombre: " << this->file_name << "\n";
   std::cout << "\tfile tam: " << this->tam_file_data << "\n";
   std::cout << "\tdestinatario tam: " << this->file_data << "\n";
-  std::cout << "\ftam_destinatario: " << this->tam_destinatario << "\n";
+  std::cout << "\ttam_destinatario: " << this->tam_destinatario << "\n";
   std::cout << "\tdestinatario : " << this->destinatario << std::endl;
 }
 
@@ -105,7 +105,9 @@ void ExitRequest::PrintStructure() const {
 
 std::shared_ptr<ClientRequest> ProcessRequest(int connectionFD) {
   char buffer[1024] = {0};
-  read(connectionFD, buffer, 1);
+  read(connectionFD, buffer, 1024);
+  printf("\n\tmessage recibido: %s\n",buffer);
+
   char action = buffer[0];
   std::string s;
 
@@ -152,10 +154,11 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connectionFD) {
     case 'b': {
       auto breq = std::make_shared<BroadcastRequest>();
       read(connectionFD, buffer, 3);
-      breq->tam_msg = atoi(buffer);
+      s = buffer;
+      breq->tam_msg = stoi(s.substr(1,3));
 
       bzero(buffer, 3);
-      read(connectionFD, buffer, breq->tam_msg);
+      read(connectionFD, buffer, breq->tam_msg + 3);
       breq->msg = buffer;
 
       return breq;
@@ -166,9 +169,9 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connectionFD) {
 
       read(connectionFD, buffer, 15);
       s = buffer;
-      ureq->tam_file_name = stoi(s.substr(0, 3));
-      ureq->tam_file_data = stoi(s.substr(3, 10));
-      ureq->tam_destinatario = stoi(s.substr(13, 2));
+      ureq->tam_file_name = stoi(s.substr(1, 3));
+      ureq->tam_file_data = stoi(s.substr(4, 10));
+      ureq->tam_destinatario = stoi(s.substr(14, 2));
 
       bzero(buffer, 15);
       read(connectionFD, buffer, ureq->tam_file_name);

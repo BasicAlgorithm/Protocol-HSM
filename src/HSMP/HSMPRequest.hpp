@@ -1,15 +1,16 @@
 #pragma once
 
-#include <iostream>
 #include <string.h>
-#include <memory>
 #include <stdlib.h>
-#include <vector>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#include <iostream>
+#include <memory>
+#include <vector>
 
 namespace HSMP {
 
