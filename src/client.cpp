@@ -22,9 +22,18 @@ std::shared_ptr<HSMP::ClientRequest> CreateRequest();
 
 void WaitForResponses(int connection_socket) {
   char buffer[1000];
+
   while (1) {
     bzero(buffer, 1000);
     recv(connection_socket, buffer, 1000, 0);
+
+    if (buffer[0] == '\0') {
+      std::cout << "CONNECTION TO SERVER ENDED. ANY FOLLOWING MESSAGES WILL FAIL" <<
+                std::endl;
+      close(connection_socket);
+      break;
+    }
+
     printf("Server: %s\n", buffer);
   }
 }
@@ -67,7 +76,6 @@ int Connect(std::string ip, int port) {
 int main(void) {
   int connection_socket = Connect("127.0.0.1", 45000);
   std::thread response_listener(WaitForResponses, connection_socket);
-  response_listener.detach();
 
   while (1) {
     auto req = std::shared_ptr<HSMP::ClientRequest>();
@@ -77,7 +85,6 @@ int main(void) {
   }
 
   shutdown(connection_socket, SHUT_RDWR);
-
   close(connection_socket);
   return 0;
 }
