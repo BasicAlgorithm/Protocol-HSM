@@ -80,8 +80,10 @@ int main(void) {
   while (1) {
     auto req = std::shared_ptr<HSMP::ClientRequest>();
     req = CreateRequest();
-    printf("mensaje parseado: %s\n", req->ParseToCharBuffer());
-    send(connection_socket, req->ParseToCharBuffer(), Klenght, 0);
+    if (req) {
+      printf("mensaje parseado: %s\n", req->ParseToCharBuffer());
+      send(connection_socket, req->ParseToCharBuffer(), Klenght, 0);
+    }
   }
 
   shutdown(connection_socket, SHUT_RDWR);
