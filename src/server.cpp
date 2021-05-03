@@ -14,6 +14,7 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <algorithm>
 
 #include "User.hpp"
 #include "HSMP/HSMPRequest.hpp"
@@ -37,7 +38,7 @@ auto users = std::make_shared<std::list<User>>(firsts_users);
 std::list<std::string> logs;
 
 std::shared_ptr<HSMP::ServerResponse> CreateResponse(
-  std::shared_ptr<HSMP::ClientRequest> request);
+    std::shared_ptr<HSMP::ClientRequest> request, User &current_user);
 
 void PrintLog() {
   std::cout << "*********************************************" << std::endl;
@@ -84,7 +85,15 @@ void AttendConnection(int client_socket, sockaddr_in client_addr) {
       close(client_socket);
       break;
     }
-
+    auto res = std::shared_ptr<HSMP::ServerResponse>();
+    // Debe existir una comprobacion para saber quien esta mandando el request, like this:
+    // for (User &sender_user : *users) {
+    //    if (sender_user.GetFileDescriptor() == client_socket)
+    auto user = *(users->begin());
+    res = CreateResponse(req, user);
+    // Una vez que se tiene el response, averiguar a quien debe mandarse.
+    // e.g. Login al mismo user, Message al destinatario, ...
+    
     send(client_socket, "Request received", 50, 0);
   }
 }
@@ -150,50 +159,91 @@ int main () {
 }
 
 std::shared_ptr<HSMP::ServerResponse> CreateResponse(
-  std::shared_ptr<HSMP::ClientRequest> request) {
+    std::shared_ptr<HSMP::ClientRequest> request, User &current_user) {
 
   switch (request->type()) {
 
     case HSMP::RequestType::kLoginRequest: {
-
+      auto lreq = std::static_pointer_cast<HSMP::LoginRequest>(request);
       auto lres = std::make_shared<HSMP::LoginResponse>();
-
-      return lres;
+      if (current_user.GetName() == lreq->user) {
+        if (current_user.GetPassword() == lreq->passwd) {
+          current_user.SetOnline();
+          lres->ok = "ok";
+          return lres;
+        }
+        else {
+          auto eres = std::make_shared<HSMP::ErrorResponse>();
+          eres->message = kMessageErrorPassword;
+          return eres;
+        }
+      }
+      auto eres = std::make_shared<HSMP::ErrorResponse>();
+      eres->message = kMessageErrorPersonDontExist;
+      return eres;
     }
 
     case HSMP::RequestType::kListaRequest: {
       auto ires = std::make_shared<HSMP::ListaResponse>();
-
+      for (User &listed_user : *users) {
+        if (listed_user.IsOnline()) {
+          ires->tam_user_names.push_back(listed_user.GetName().size());
+          ires->user_names.push_back(listed_user.GetName());
+        }
+      }
+      ires->num_users = ires->user_names.size();
       return ires;
     }
 
     case HSMP::RequestType::kMessageRequest: {
+      // Se asume que las comprobaciones se hacen en AttendConnection para saber
+      // a quien se debe mandar el response, y si ese usuario existe y esta conectado
+      auto mreq = std::static_pointer_cast<HSMP::MessageRequest>(request);
       auto mres = std::make_shared<HSMP::MessageResponse>();
-
+      mres->tam_msg = mreq->tam_msg;
+      mres->msg = mreq->msg;
+      mres->tam_remitente = current_user.GetName().size();
+      mres->remitente = current_user.GetName();
       return mres;
     }
 
     case HSMP::RequestType::kBroadcastRequest: {
+      // Se asume que el mismo mensaje se manda a todos los usuarios conectados
+      auto breq = std::static_pointer_cast<HSMP::BroadcastRequest>(request);
       auto bres = std::make_shared<HSMP::BroadcastResponse>();
-      // write(ConnectFD, res->ParseToCharBuffer(), Klenght);
+      bres->tam_msg = breq->tam_msg;
+      bres->msg = breq->msg;
+      bres->tam_remitente = current_user.GetName().size();
+      bres->remitente = current_user.GetName();
       return bres;
     }
 
     case HSMP::RequestType::kUploadFileRequest: {
+      auto ureq = std::static_pointer_cast<HSMP::UploadFileRequest>(request);
       auto ures = std::make_shared<HSMP::UploadFileResponse>();
-
+      ures->tam_file_name = ureq->tam_file_name;
+      ures->tam_file_data = ureq->tam_file_data;
+      ures->tam_remitente = current_user.GetName().size();
+      ures->file_name = ureq->file_name;
+      ures->remitente = current_user.GetName();
+      strcpy(ures->file_data, ureq->file_data);
       return ures;
     }
 
+      // UploadRequest deberia devolver un File_ANResponse al destinatario
+      // File_ANRequest deberia devolver un UploadResponse al mismo user que hace el request
+ 
     case HSMP::RequestType::kFile_ANRequest: {
+      auto freq = std::static_pointer_cast<HSMP::File_ANRequest>(request);
       auto fres = std::make_shared<HSMP::File_ANResponse>();
-
+      fres->tam_user_name = current_user.GetName().size();
+      fres->user_name = current_user.GetName();
       return fres;
     }
 
     case HSMP::RequestType::kExitRequest: {
       auto xres = std::make_shared<HSMP::ExitResponse>();
-
+      current_user.SetOffline();
       return xres;
     }
 

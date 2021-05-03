@@ -19,6 +19,7 @@ class User {
 
   void OneMoreConnection();
   int GetQuantityOfConnections();
+  int GetFileDescriptor();
   std::string GetName();
   std::string GetPassword();
   bool IsOnline();
@@ -32,6 +33,10 @@ void User::OneMoreConnection() {
 
 int User::GetQuantityOfConnections() {
   return quantity_of_connections_;
+}
+
+int User::GetFileDescriptor() {
+  return file_descriptor;
 }
 
 std::string User::GetName() {
