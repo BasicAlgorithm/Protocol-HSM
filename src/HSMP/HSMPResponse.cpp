@@ -1,33 +1,123 @@
 #include "HSMPResponse.hpp"
+#include <iostream>
+#include <vector>
 
 namespace HSMP {
 
 void LoginResponse::PrintStructure() const {
   std::cout << "LoginResponse:\n";
-  std::cout << "\tLogin state: " << this->ok << std::endl;
+  //std::cout << "\tLogin state: " << this->ok << std::endl;
+  std::cout << "\tBienvenido" << std::endl;
+}
+
+char *LoginResponse::ParseToCharBuffer() const {
+  std::string parsed_structure("L");
+
+  parsed_structure += this->ok;
+
+  char *buffer= new char[parsed_structure.length() + 1];
+  std::size_t length = parsed_structure.copy(buffer, parsed_structure.length(),
+                       0);
+  buffer[length]='\0';
+
+  //std::cout << "to send: " << buffer << std::endl;
+
+  return buffer;
 }
 
 void ListaResponse::PrintStructure() const {
   std::cout << "ListaResponse:\n";
+  if (this->num_users == 0) {
+    std::cout << "\tnobody_online" << std::endl;
+    return;
+  }
   std::cout << "\tnumber of users: " << this->num_users << "\n";
 
   for (int i = 0; i < num_users; ++i)
     std::cout << "\tUser #" << i << ": " << this->user_names[i] << "\n";
 }
 
+char *ListaResponse::ParseToCharBuffer() const {
+  // I 03 11 03 05 Santisteban Lee Peter I 03 03 02 03 Jon Wu Lee
+  std::string parsed_structure("I");
+
+  if (this->num_users <= 9)
+      parsed_structure += "0";
+
+  parsed_structure += std::to_string(this->num_users);
+
+  for (auto &it : tam_user_names) {
+    
+    if (it <= 9)
+      parsed_structure += "0";
+    
+    parsed_structure += std::to_string(it);
+
+  }
+
+  for (auto &it : user_names) {
+    
+    parsed_structure += it;
+
+  }
+
+  char *buffer= new char[parsed_structure.length() + 1];
+  std::size_t length = parsed_structure.copy(buffer, parsed_structure.length(),
+                       0);
+  buffer[length]='\0';
+
+  //std::cout << "to send: " << buffer << std::endl;
+
+  return buffer;
+}
+
 void MessageResponse::PrintStructure() const {
-  std::cout << "MessageResponse:\n";
-  std::cout << "\ttam_msg: " << this->tam_msg << "\n";
-  std::cout << "\ttam_remitente: " << this->tam_remitente << "\n";
+  std::cout << "New message:\n";
+  //std::cout << "MessageResponse:\n";
+  //std::cout << "\ttam_msg: " << this->tam_msg << "\n";
+  //std::cout << "\ttam_remitente: " << this->tam_remitente << "\n";
   std::cout << "\tmsg: " << this->msg << "\n";
   std::cout << "\tremitente: " << this->remitente << std::endl;
 }
 
+char *MessageResponse::ParseToCharBuffer() const {
+  std::string parsed_structure("M");
+
+  if (this->msg.length() <= 99) {
+    parsed_structure += "0";
+
+    if (this->msg.length() <= 9)
+      parsed_structure += "0";
+  }
+
+  parsed_structure += std::to_string(this->tam_msg);
+
+  if (this->msg.length() <= 9)
+      parsed_structure += "0";
+
+  parsed_structure += std::to_string(this->tam_remitente);
+
+  parsed_structure += this->msg;
+  parsed_structure += this->remitente;
+
+
+  char *buffer= new char[parsed_structure.length() + 1];
+  std::size_t length = parsed_structure.copy(buffer, parsed_structure.length(),
+                       0);
+  buffer[length]='\0';
+
+  
+  //std::cout << "to send: " << buffer << std::endl;
+
+  return buffer;
+}
+
 void BroadcastResponse::PrintStructure() const {
-  std::cout << "BroadcastResponse:\n";
-  std::cout << "\tmensaje tam: " << this->tam_msg << "\n";
+  std::cout << "New broadcast message:\n";
+  //std::cout << "BroadcastResponse:\n";
+  //std::cout << "\tmensaje tam: " << this->tam_msg << "\n";
   std::cout << "\tmensaje: " << this->msg << "\n";
-  std::cout << "\tremitente tam: " << this->tam_remitente << "\n";
+  //std::cout << "\tremitente tam: " << this->tam_remitente << "\n";
   std::cout << "\tremitente: " << this->remitente << std::endl;
 }
 
@@ -63,11 +153,11 @@ char *BroadcastResponse::ParseToCharBuffer() const {
 
 void UploadFileResponse::PrintStructure() const {
   std::cout << "UploadFileResponse:\n";
-  std::cout << "\tfile name tam: " << this->tam_file_name << "\n";
+  //std::cout << "\tfile name tam: " << this->tam_file_name << "\n";
   std::cout << "\tfile: " << this-> file_name << "\n";
-  std::cout << "\tfile tam: " << this-> tam_file_data << "\n";
+  //std::cout << "\tfile tam: " << this-> tam_file_data << "\n";
   std::cout << "\tfile_data: " << this-> file_data << "\n";
-  std::cout << "\tremitente tam: " << this-> tam_remitente << "\n";
+  //std::cout << "\tremitente tam: " << this-> tam_remitente << "\n";
   std::cout << "\tremitente: " << this->remitente << std::endl;
 }
 
@@ -114,15 +204,41 @@ void ExitResponse::PrintStructure() const {
   std::cout << "ExitResponse" << std::endl;
 }
 
+char *ExitResponse::ParseToCharBuffer() const {
+  std::string parsed_structure("X");
+
+  char *buffer= new char[parsed_structure.length() + 1];
+  std::size_t length = parsed_structure.copy(buffer, parsed_structure.length(),
+                       0);
+  buffer[length]='\0';
+  return buffer;
+
+}
+
 void ErrorResponse::PrintStructure() const {
   std::cout << "ErrorResponse:\n";
   std::cout << "\tmessage: " << this->message << std::endl;
 }
 
-std::shared_ptr<ServerResponse> ProcessResponse(int connectionFD) {
+char *ErrorResponse::ParseToCharBuffer() const {
+  std::string parsed_structure("E");
+
+  parsed_structure += this->message;
+
+  char *buffer= new char[parsed_structure.length() + 1];
+  std::size_t length = parsed_structure.copy(buffer, parsed_structure.length(),
+                       0);
+  buffer[length]='\0';
+  return buffer;
+
+}
+
+std::shared_ptr<ServerResponse> ProcessResponse(int connectionFD, char &first_char) {
   char buffer[1000] = {0};
   bzero(buffer, 1000);
   recv(connectionFD, buffer, 1000, 0);
+  //printf("Server: %s\n", buffer);
+  first_char = buffer[0];
 
   char action = buffer[0];
   std::string s = buffer;
@@ -139,6 +255,7 @@ std::shared_ptr<ServerResponse> ProcessResponse(int connectionFD) {
     case 'I': {
       // * 12 34 56 78 9*123456789 *12 3456789*123456
       // I 03 11 03 05 Santisteban Lee Peter
+      // I 5 05 06 06 06 06 Mateo Miguel ElPepe guest1 guest2
       auto Ires = std::make_shared<ListaResponse>();
 
       Ires->num_users = stoi(s.substr(1, 2));

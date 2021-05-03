@@ -30,7 +30,7 @@ char* LoginRequest::ParseToCharBuffer() const {
                        0);
   buffer[length] = '\0';
 
-  std::cout << "\tLoginRequest sending to server: " << buffer << std::endl;
+  //std::cout << "\tLoginRequest sending to server: " << buffer << std::endl;
 
   return buffer;
 }
@@ -59,10 +59,12 @@ void MessageRequest::PrintStructure() const {
 char* MessageRequest::ParseToCharBuffer() const {
   std::string parsed_structure("m");
 
-  if (this->tam_msg <= 9)
-    parsed_structure += "00";
-  else if (this->tam_msg <= 99)
+  if (this->msg.length() <= 99) {
     parsed_structure += "0";
+
+    if (this->msg.length() <= 9)
+      parsed_structure += "0";
+  }
 
   parsed_structure += std::to_string(this->tam_msg);
 
@@ -192,18 +194,18 @@ char* ExitRequest::ParseToCharBuffer() const {
 
 std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket, 
                                               int &bytes_received, 
-                                              std::list<std::string> &logs) {
+                                              std::list<std::string> &logs
+                                              /*User *&current_user*/) {
   char buffer[1000] = {0};
   bytes_received = recv(connection_socket, buffer, 1000, 0);
 
   if (buffer[0] == '\0')
     return std::make_shared<ExitRequest>();
 
-  printf("\n\tmensaje recibido: %s\n", buffer);
-  logs.push_back(buffer);
-
+  //printf("\n\tmensaje recibido: %s\n", buffer);
   char action = buffer[0];
   std::string s = buffer;
+  logs.push_back(s);
 
   switch (action) {
     case 'l': {
@@ -214,16 +216,27 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket,
 
       lreq->user = s.substr(5, lreq->tam_user);
       lreq->passwd = s.substr(5 + lreq->tam_user, lreq->tam_passwd);
+      
+      //std::string new_log(current_user->GetName());
+      //std::string new_log (" trying login");
+      //logs.push_back(new_log);
 
       return lreq;
     }
 
     case 'i': {
       auto ireq = std::make_shared<ListaRequest>();
+
+      //std::string new_log("List request by ");
+      //new_log += current_user->GetName();
+      //logs.push_back(new_log);
+
       return ireq;
     }
 
     case 'm': {
+      // * 123 45 6789* 123456789*
+      // M 005 05 hello Mateo
       auto mreq = std::make_shared<MessageRequest>();
 
       mreq->tam_msg = stoi(s.substr(1, 3));
@@ -231,6 +244,12 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket,
 
       mreq->msg = s.substr(6, mreq->tam_msg);
       mreq->destinatario = s.substr(6 + mreq->tam_msg, mreq->tam_destinatario);
+
+      //std::string new_log("Message from ");
+      //new_log += current_user->GetName();
+      //new_log += " to ";
+      //new_log += mreq->destinatario;
+      //logs.push_back(new_log);
 
       return mreq;
     }
@@ -240,6 +259,10 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket,
 
       breq->tam_msg = stoi(s.substr(1, 3));
       breq->msg = s.substr(4);
+
+      //std::string new_log("BroadCast from ");
+      //new_log += current_user->GetName();
+      //logs.push_back(new_log);
 
       return breq;
     }
@@ -260,6 +283,13 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket,
       ureq->destinatario = s.substr(16 + ureq->tam_file_name + ureq->tam_file_data,
                                     ureq->tam_destinatario);
 
+      
+      //std::string new_log("UploadFile from ");
+      //new_log += current_user->GetName();
+      //new_log += " to ";
+      //new_log += ureq->destinatario;
+      //logs.push_back(new_log);
+
       return ureq;
     }
 
@@ -274,6 +304,11 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket,
 
     case 'x': {
       auto xreq = std::make_shared<ExitRequest>();
+
+      //std::string new_log("Disconnect ");
+      //new_log += current_user->GetName();
+      //logs.push_back(new_log);
+
       return xreq;
     }
 

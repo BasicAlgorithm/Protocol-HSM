@@ -127,6 +127,7 @@ struct ExitRequest : ClientRequest {
 
 std::shared_ptr<ClientRequest> ProcessRequest(int connectionFD, 
                                               int &bytes_received,
-                                              std::list<std::string> &logs);
+                                              std::list<std::string> &logs
+                                              /*User *&current_user*/);
 
 }

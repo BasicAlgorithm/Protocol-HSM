@@ -14,6 +14,7 @@
 #include <map>
 #include <memory>
 
+#include "User.hpp"
 #include "HSMP/HSMPRequest.hpp"
 #include "HSMP/HSMPResponse.hpp"
 
@@ -23,24 +24,26 @@ bool login_correct = false;
 std::shared_ptr<HSMP::ClientRequest> CreateRequest();
 
 void WaitForResponses(int connection_socket) {
-  char buffer[1000];
+  char first_char;
 
   while (1) {
-    // PHASE 04
-    //auto res = std::shared_ptr<HSMP::ServerResponse>();
-    //res = HSMP::ProcessResponse(connection_socket);
-    //res->PrintStructure();
-    bzero(buffer, 1000);
-    recv(connection_socket, buffer, 1000, 0);
 
-    if (buffer[0] == '\0') {
+    // PHASE 04
+    auto res = std::shared_ptr<HSMP::ServerResponse>();
+    res = HSMP::ProcessResponse(connection_socket, first_char);
+    res->PrintStructure();
+
+    if (res->type() == HSMP::kLoginResponse) {
+      login_correct = true;
+    }
+
+    if (first_char == '\0') {
       std::cout << "CONNECTION TO SERVER ENDED. ANY FOLLOWING MESSAGES WILL FAIL" <<
                 std::endl;
       close(connection_socket);
       break;
     }
 
-    printf("Server: %s\n", buffer);
   }
 }
 
@@ -100,13 +103,18 @@ int main(void) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
   }
-
-
+  system("clear");
   while (1) {
     auto req = std::shared_ptr<HSMP::ClientRequest>();
     req = CreateRequest();
-    printf("mensaje parseado: %s\n", req->ParseToCharBuffer());
-    send(connection_socket, req->ParseToCharBuffer(), Klenght, 0);
+    
+    if (req) {
+      //printf("mensaje parseado: %s\n", req->ParseToCharBuffer());
+      send(connection_socket, req->ParseToCharBuffer(), Klenght, 0);
+    }
+    if (req->type() == HSMP::kExitRequest) {
+      break;
+    }
   }
 
   shutdown(connection_socket, SHUT_RDWR);
@@ -116,7 +124,7 @@ int main(void) {
 
 std::shared_ptr<HSMP::ClientRequest> CreateRequest() {
   char accion;
-  printf("What do you want to do? [l] [i] [m] [b] [u] [f] [x]\n");
+  printf("What do you want to do? [i: lista] [m: message] [b: broadcast] [u: uploadFile] [x: exit]\n");
 
   std::cin >> accion;
   std::cin.ignore();
