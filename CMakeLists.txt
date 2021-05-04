@@ -8,7 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-set(HSMP_SOURCES src/HSMP/HSMPRequest.cpp src/HSMP/HSMPResponse.cpp)
+set(HSMP_SOURCES src/HSMP/HSMPRequest.cpp src/HSMP/HSMPResponse.cpp src/utils/base64.cpp)
 
 add_executable(server src/server.cpp ${HSMP_SOURCES})
 target_link_libraries(server pthread)

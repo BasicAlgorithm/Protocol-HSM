@@ -99,11 +99,11 @@ struct BroadcastResponse : ServerResponse {
 
 struct UploadFileResponse : ServerResponse {
   short int tam_file_name;
-  short int tam_file_data;
+  int tam_file_data;
   short int tam_remitente;
   std::string file_name;
+  std::string file_data;
   std::string remitente;
-  char* file_data;
 
   UploadFileResponse() : ServerResponse('U', kUploadFileResponse) {}
   ~UploadFileResponse() {}

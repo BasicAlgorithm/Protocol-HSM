@@ -13,10 +13,12 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <fstream>
 
 #include "User.hpp"
 #include "HSMP/HSMPRequest.hpp"
 #include "HSMP/HSMPResponse.hpp"
+#include "utils/base64.hpp"
 
 bool KLoginAccepted = false;
 bool KConnectedWithserver = true;
@@ -38,6 +40,15 @@ void WaitForResponses(int connection_socket) {
                 std::endl;
       KConnectedWithserver = false;
       break;
+    }
+    
+    res->PrintStructure();
+
+    // If (upload)
+
+    // To break login infinity loop
+    if (res->type() == HSMP::kLoginResponse) {
+      KLoginAccepted = true;
     }
 
     res->PrintStructure();
@@ -135,6 +146,7 @@ int main(void) {
   
   }
   std::cout << "\n Disconnecting... ";
+
   response_listener.join();
 
   shutdown(connection_socket, SHUT_RDWR);
@@ -201,14 +213,35 @@ std::shared_ptr<HSMP::ClientRequest> CreateRequest() {
       auto ureq = std::make_shared<HSMP::UploadFileRequest>();
       std::cout << "Creating UploadFile Request" << '\n';
 
-      std::cout << "What is the filename: ";
+      std::cout << "What is the file path: ";
+      std::string path;
+      getline(std::cin, path);
+
+      std::ifstream file(path, std::ios::binary | std::ios::ate);
+      if (file.is_open()) {
+        Base64Formatter formatter;
+        std::streampos data_size;
+        char* memblock;
+
+        data_size = file.tellg();
+        memblock = new char[data_size];
+        file.seekg (0, std::ios::beg);
+        file.read (memblock, data_size);
+        file.close();
+
+        ureq->file_data = formatter.encode(memblock, data_size);
+        ureq->tam_file_data = ureq->file_data.size();
+
+        delete[] memblock;
+      }
+      else {
+        std::cout << "Unable to open file\n";
+        return nullptr;
+      }
+
+      std::cout << "What is the file name: ";
       getline(std::cin, ureq->file_name);
       ureq->tam_file_name = ureq->file_name.size();
-
-      ureq->file_data = new char[2];
-      ureq->file_data[0] = '0';
-      ureq->file_data[1] = '\0';
-      ureq->tam_file_data = 0;
 
       std::cout << "What is the receptor's name: ";
       getline(std::cin, ureq->destinatario);
