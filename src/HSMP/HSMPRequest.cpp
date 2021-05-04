@@ -30,7 +30,7 @@ char* LoginRequest::ParseToCharBuffer() const {
                        0);
   buffer[length] = '\0';
 
-  std::cout << "\tLoginRequest sending to server: " << buffer << std::endl;
+  //std::cout << "\tLoginRequest sending to server: " << buffer << std::endl;
 
   return buffer;
 }
@@ -59,10 +59,12 @@ void MessageRequest::PrintStructure() const {
 char* MessageRequest::ParseToCharBuffer() const {
   std::string parsed_structure("m");
 
-  if (this->tam_msg <= 9)
-    parsed_structure += "00";
-  else if (this->tam_msg <= 99)
+  if (this->tam_msg <= 99) {
     parsed_structure += "0";
+
+    if (this->tam_msg <= 9)
+      parsed_structure += "0";
+  }
 
   parsed_structure += std::to_string(this->tam_msg);
 
@@ -190,15 +192,16 @@ char* ExitRequest::ParseToCharBuffer() const {
   return buffer;
 }
 
-std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket) {
+std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket, 
+                                              std::string &mid_log) {
   char buffer[1000] = {0};
   recv(connection_socket, buffer, 1000, 0);
 
-  if (buffer[0] == '\0')
-    return std::make_shared<ExitRequest>();
-
-  printf("\n\tmensaje recibido: %s\n", buffer);
-
+  if (buffer[0] == '\0') {
+    mid_log += "Forced disconnecting ";
+    return nullptr;
+  }
+  //printf("\n\tmensaje recibido: %s\n", buffer);
   char action = buffer[0];
   std::string s = buffer;
 
@@ -211,16 +214,24 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket) {
 
       lreq->user = s.substr(5, lreq->tam_user);
       lreq->passwd = s.substr(5 + lreq->tam_user, lreq->tam_passwd);
+      
+      mid_log += "Trying login ";
+      mid_log += lreq->user;
 
       return lreq;
     }
 
     case 'i': {
       auto ireq = std::make_shared<ListaRequest>();
+
+      mid_log += "List request by ";
+
       return ireq;
     }
 
     case 'm': {
+      // * 123 45 6789* 123456789*
+      // M 005 05 hello Mateo
       auto mreq = std::make_shared<MessageRequest>();
 
       mreq->tam_msg = stoi(s.substr(1, 3));
@@ -228,6 +239,10 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket) {
 
       mreq->msg = s.substr(6, mreq->tam_msg);
       mreq->destinatario = s.substr(6 + mreq->tam_msg, mreq->tam_destinatario);
+
+      mid_log += "Message to ";
+      mid_log += mreq->destinatario;
+      mid_log += " from ";
 
       return mreq;
     }
@@ -237,6 +252,8 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket) {
 
       breq->tam_msg = stoi(s.substr(1, 3));
       breq->msg = s.substr(4);
+
+      mid_log = "BroadCast from ";
 
       return breq;
     }
@@ -257,6 +274,11 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket) {
       ureq->destinatario = s.substr(16 + ureq->tam_file_name + ureq->tam_file_data,
                                     ureq->tam_destinatario);
 
+      
+      mid_log = "UploadFile to ";
+      mid_log += ureq->destinatario;
+      mid_log += " from ";
+
       return ureq;
     }
 
@@ -271,6 +293,9 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket) {
 
     case 'x': {
       auto xreq = std::make_shared<ExitRequest>();
+
+      mid_log += "Disconnecting ";
+
       return xreq;
     }
 

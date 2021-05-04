@@ -11,6 +11,7 @@
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <list>
 
 namespace HSMP {
 
@@ -124,6 +125,7 @@ struct ExitRequest : ClientRequest {
   char* ParseToCharBuffer() const override;
 };
 
-std::shared_ptr<ClientRequest> ProcessRequest(int connectionFD);
+std::shared_ptr<ClientRequest> ProcessRequest(int connectionFD, 
+                                              std::string &mid_log);
 
 }

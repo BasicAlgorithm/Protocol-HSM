@@ -53,6 +53,8 @@ struct LoginResponse : ServerResponse {
   ~LoginResponse() {}
 
   void PrintStructure() const override;
+  char *ParseToCharBuffer() const override;
+
 };
 
 struct ListaResponse : ServerResponse {
@@ -64,6 +66,8 @@ struct ListaResponse : ServerResponse {
   ~ListaResponse() {}
 
   void PrintStructure() const override;
+  char *ParseToCharBuffer() const override;
+
 };
 
 struct MessageResponse : ServerResponse {
@@ -76,6 +80,8 @@ struct MessageResponse : ServerResponse {
   ~MessageResponse() {}
 
   void PrintStructure() const override;
+  char *ParseToCharBuffer() const override;
+
 };
 
 struct BroadcastResponse : ServerResponse {
@@ -88,7 +94,6 @@ struct BroadcastResponse : ServerResponse {
   ~BroadcastResponse() {}
 
   void PrintStructure() const override;
-
   char *ParseToCharBuffer() const override;
 };
 
@@ -104,7 +109,6 @@ struct UploadFileResponse : ServerResponse {
   ~UploadFileResponse() {}
 
   void PrintStructure() const override;
-
   char *ParseToCharBuffer() const override;
 };
 
@@ -119,10 +123,13 @@ struct File_ANResponse : ServerResponse {
 };
 
 struct ExitResponse : ServerResponse {
+
   ExitResponse() : ServerResponse('X', kExitResponse) {}
   ~ExitResponse() {}
 
   void PrintStructure() const override;
+  char *ParseToCharBuffer() const override;
+
 };
 
 struct ErrorResponse : ServerResponse {
@@ -132,6 +139,8 @@ struct ErrorResponse : ServerResponse {
   ~ErrorResponse() {}
 
   void PrintStructure() const override;
+  char *ParseToCharBuffer() const override;
+
 };
 
 std::shared_ptr<ServerResponse> ProcessResponse(int connectionFD);

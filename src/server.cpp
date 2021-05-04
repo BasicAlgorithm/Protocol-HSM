@@ -6,7 +6,6 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <thread>
 #include <sys/socket.h>
 
 #include <iostream>
@@ -14,88 +13,176 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <thread>
+#include <mutex>
+#include <iomanip>
 #include <algorithm>
 
 #include "User.hpp"
 #include "HSMP/HSMPRequest.hpp"
 #include "HSMP/HSMPResponse.hpp"
 
-const int Klenght = 50;
+const int KMaxLogs = 8;
+std::mutex mtx;
 
-const std::string kMessageErrorPassword ("[HSMP] password_wrong");
-const std::string kMessageErrorPersonDisconnected ("[HSMP] person_discon");
-const std::string kMessageErrorPersonDontExist ("[HSMP] pers_no_exist");
+const std::string kMessageWrongCredentials        ("_Wrong_Credentials_]");
+const std::string kMessageErrorPersonDisconnected ("_Person_is_Offline_]");
+const std::string kMessageErrorPersonDontExist    ("_Person_dont_exist_]");
+const std::string KMessageWellHacked              ("Well_Hacked_but_not]");
+const std::string KMessageAlreadyOnline           ("User_already_Online]");
 
-auto firsts_users = { User("127.0.0.1", "Joaquin", "gaa"),
-       User("127.0.0.1", "Mateo", "gee"),
-       User("127.0.0.1", "Miguel", "gii"),
-       User("127.0.0.1", "ElPepe", "ucsp"),
-       User("127.0.0.1", "guest1", "guest1"),
-       User("127.0.0.1", "guest2", "guest2"),
+auto firsts_users = { User("Joaquin", "gaa"),
+                      User("Mateo", "gee"),
+                      User("Miguel", "gii"),
+                      User("ElPepe", "ucsp"),
+                      User("guest1", "guest1"),
+                      User("guest2", "guest2"),
 };
 
 auto users = std::make_shared<std::list<User>>(firsts_users);
 std::list<std::string> logs;
 
 std::shared_ptr<HSMP::ServerResponse> CreateResponse(
-    std::shared_ptr<HSMP::ClientRequest> request, User &current_user);
+    std::shared_ptr<HSMP::ClientRequest> request, std::shared_ptr<User*> current_user, 
+    int &destinatario_FD);
 
-void PrintLog() {
-  std::cout << "*********************************************" << std::endl;
-  std::cout << "*************** HSMProtocol *****************" << std::endl;
-  std::cout << "*********************************************" << std::endl;
-  std::cout << "***************** All User ******************" << std::endl;
-  std::cout << "*********************************************" << std::endl;
+void PrintScreenServer() {
+  mtx.lock();
+  system("clear");
+  std::cout << "+-------------------------------------------+" << std::endl;
+  std::cout << "|               HSMProtocol                 |" << std::endl;
+  std::cout << "+-------------------------------------------+" << std::endl;
+  std::cout << "|                All User                   |" << std::endl;
+  std::cout << "+-------------------------------------------+" << std::endl;
 
-  for (std::list<User>::iterator user = users->begin(); user != users->end();
-       ++user)
-    std::cout << "\t" << user->GetName() << std::endl;
+  for (User &user : *users)
+    std::cout << "|" << std::setw(10) << user.GetName() << std::setw(34) << "|" << std::endl;
 
-  std::cout << "*********************************************" << std::endl;
-  std::cout << "**************** Active Users ***************" << std::endl;
-  std::cout << "*********************************************" << std::endl;
+  std::cout << "+-------------------------------------------+" << std::endl;
+  std::cout << "|                Active Users               |" << std::endl;
+  std::cout << "+-------------------------------------------+" << std::endl;
 
-  for (std::list<User>::iterator user = users->begin(); user != users->end();
-       ++user) {
-    if (user->IsOnline()) std::cout << "\t" << user->GetName() << std::endl;
+  std::cout << std::setw(1) << "| " 
+            << std::setw(10) << "USER"
+            << std::setw(15) << "IP"
+            << std::setw(8) << "FD"
+            << std::setw(8) << "QC" << " |" << std::endl;
+
+  for (User &user : *users) {
+    if (user.IsOnline()) std::cout <<  "| " 
+                                    << std::setw(10) << user.GetName() 
+                                    << std::setw(15) << user.GetIp()
+                                    << std::setw(8) << user.GetFileDescriptor()
+                                    << std::setw(8) << user.GetQuantityOfConnections() 
+                                    << " |" << std::endl;
   }
 
-  std::cout << "*********************************************" << std::endl;
-  std::cout << "************** Last Request *****************" << std::endl;
-  std::cout << "*********************************************" << std::endl;
+  std::cout << "+-------------------------------------------+" << std::endl;
+  std::cout << "|                Last Request               |" << std::endl;
+  std::cout << "+-------------------------------------------+" << std::endl;
+  if (logs.size() == 0) std::cout << "|\tno request yet"  << std::setw(23) << "" << std::endl;
+  if (logs.size() >= KMaxLogs) logs.pop_front();
+  for (std::string &log : logs)
+    std::cout << "| " << std::setw(24) << log << std::setw(8) << "" << std::endl;
 
-  for (std::list<std::string>::iterator log = logs.begin(); log != logs.end();
-       ++log)
-    std::cout << "\t" << *log << std::endl;
-
-  std::cout << "*********************************************" << std::endl;
+  std::cout << "+-------------------------------------------+" << std::endl;
+  mtx.unlock();
 }
 
 void AttendConnection(int client_socket, sockaddr_in client_addr) {
-  std::cout << "Processing requests for (" << inet_ntoa(client_addr.sin_addr) <<
-            ", " <<
-            ntohs(client_addr.sin_port) << ") in socket " << client_socket <<
-            std::endl;
+
+  auto current_user = std::make_shared<User*>();
+  int destinatario_FD;
+  std::string ip = inet_ntoa(client_addr.sin_addr);
+  int port = ntohs(client_addr.sin_port);
+  std::string mid_log("");
 
   while (1) {
-    auto req = HSMP::ProcessRequest(client_socket);
-    req->PrintStructure();
 
-    if (req->type() == HSMP::kExitRequest) {
-      close(client_socket);
+    // PHASE 02
+    auto req = HSMP::ProcessRequest(client_socket, mid_log);
+    
+    // This happen if client shut down or disconnect
+    if (req == nullptr) {
+      if ((*current_user) != nullptr) {
+        (*current_user)->SetOffline();
+        mid_log += (*current_user)->GetName();
+      }
+      logs.push_back(mid_log);
+      PrintScreenServer();
       break;
     }
-    auto res = std::shared_ptr<HSMP::ServerResponse>();
-    // Debe existir una comprobacion para saber quien esta mandando el request, like this:
-    // for (User &sender_user : *users) {
-    //    if (sender_user.GetFileDescriptor() == client_socket)
-    auto user = *(users->begin());
-    res = CreateResponse(req, user);
-    // Una vez que se tiene el response, averiguar a quien debe mandarse.
-    // e.g. Login al mismo user, Message al destinatario, ...
+
+    // Trying to better format logs 1
+    if (req->type() != HSMP::kLoginRequest)
+      mid_log += (*current_user)->GetName();
     
-    send(client_socket, "Request received", 50, 0);
+
+    // PHASE 03
+    auto res = std::shared_ptr<HSMP::ServerResponse>();
+    res = CreateResponse(req, current_user, destinatario_FD);
+
+    if (res->type() == HSMP::kLoginResponse) {
+      (*current_user)->SetIP(ip);
+      (*current_user)->SetFileDescriptor(client_socket);
+      (*current_user)->OneMoreConnection();
+      (*current_user)->SetOnline();
+      PrintScreenServer();
+    }
+
+    if (res->type() == HSMP::kBroadcastResponse) {
+      for (User &listed_user : *users) {
+        if (listed_user.GetName() == (*current_user)->GetName()) continue;
+        if (listed_user.IsOnline()) {
+          send(listed_user.GetFileDescriptor(), res->ParseToCharBuffer(), strlen(res->ParseToCharBuffer()), 0);
+        }
+      }
+
+      mid_log += " -> Accept";
+      logs.push_back(mid_log);
+      mid_log.clear();
+      
+      PrintScreenServer();
+      continue;
+    }
+
+    if (res->type() == HSMP::kMessageResponse) {
+      send(destinatario_FD, res->ParseToCharBuffer(), strlen(res->ParseToCharBuffer()), 0);
+      
+      mid_log += " -> Accept";
+      logs.push_back(mid_log);
+      mid_log.clear();
+
+      PrintScreenServer();
+      continue;
+    }
+
+    if (res->type() == HSMP::kExitResponse) {
+
+      mid_log += " -> Accept";
+      logs.push_back(mid_log);
+
+      send(client_socket, res->ParseToCharBuffer(), strlen(res->ParseToCharBuffer()), 0);
+      PrintScreenServer();
+      break;
+    }
+    
+    // Trying to better format logs 2
+    if (res->type() == HSMP::kErrorResponse) {
+      mid_log += " -> Reject";
+    } else {
+      mid_log += " -> Accept";
+    }
+    logs.push_back(mid_log);
+    mid_log.clear();
+
+
+    send(client_socket, res->ParseToCharBuffer(), strlen(res->ParseToCharBuffer()), 0);
+    PrintScreenServer();
   }
+
+  shutdown(client_socket, SHUT_RDWR);
+  close(client_socket);
 }
 
 void Listen(int port) {
@@ -124,14 +211,17 @@ void Listen(int port) {
     exit(EXIT_FAILURE);
   }
 
-  std::cout << "Listening on port " << port << std::endl;
+  //std::cout << "Listening on port " << port << std::endl;
+  PrintScreenServer();
 
   while (1) {
     sockaddr_in client_addr;
     socklen_t addr_len = sizeof(client_addr);
 
     int client_socket = accept(sock, (sockaddr*)&client_addr, &addr_len);
-    std::cout << "Accepted connection on socket " << client_socket << std::endl;
+    logs.push_back("Accepted connection FD " + std::to_string(client_socket));
+
+    PrintScreenServer();
 
     if (client_socket == -1) {
       perror("Problem with client connecting");
@@ -147,11 +237,6 @@ void Listen(int port) {
 }
 
 int main () {
-  logs.push_back("List from Xian");
-  logs.push_back("Message from Xian to Lee");
-  logs.push_back("Message from Lee to Xian");
-  logs.push_back("UploadFile from Xian to Lee");
-  users->begin()->SetOffline();
 
   Listen(45000);
 
@@ -159,33 +244,45 @@ int main () {
 }
 
 std::shared_ptr<HSMP::ServerResponse> CreateResponse(
-    std::shared_ptr<HSMP::ClientRequest> request, User &current_user) {
+  std::shared_ptr<HSMP::ClientRequest> request,
+  std::shared_ptr<User*> current_user,
+  int &destinatario_FD) {
 
   switch (request->type()) {
 
     case HSMP::RequestType::kLoginRequest: {
+
       auto lreq = std::static_pointer_cast<HSMP::LoginRequest>(request);
       auto lres = std::make_shared<HSMP::LoginResponse>();
-      if (current_user.GetName() == lreq->user) {
-        if (current_user.GetPassword() == lreq->passwd) {
-          current_user.SetOnline();
-          lres->ok = "ok";
-          return lres;
-        }
-        else {
+
+      for (User &user : *users) {
+        if (user.GetName() == lreq->user) {
+          if (user.GetPassword() == lreq->passwd) {
+            if (user.IsOnline()){
+              auto eres = std::make_shared<HSMP::ErrorResponse>();
+              eres->message = KMessageWellHacked; // joke answer
+              //eres->message = KMessageAlreadyOnline; // serious answer
+              return eres;
+            } else {
+              lres->ok = "ok";
+              *current_user = &user;
+              return lres;
+            }
+          }
           auto eres = std::make_shared<HSMP::ErrorResponse>();
-          eres->message = kMessageErrorPassword;
+          eres->message = kMessageWrongCredentials;
           return eres;
         }
       }
       auto eres = std::make_shared<HSMP::ErrorResponse>();
-      eres->message = kMessageErrorPersonDontExist;
+      eres->message = kMessageWrongCredentials;
       return eres;
     }
 
     case HSMP::RequestType::kListaRequest: {
       auto ires = std::make_shared<HSMP::ListaResponse>();
       for (User &listed_user : *users) {
+        if (listed_user.GetName() == (*current_user)->GetName()) continue;
         if (listed_user.IsOnline()) {
           ires->tam_user_names.push_back(listed_user.GetName().size());
           ires->user_names.push_back(listed_user.GetName());
@@ -196,38 +293,64 @@ std::shared_ptr<HSMP::ServerResponse> CreateResponse(
     }
 
     case HSMP::RequestType::kMessageRequest: {
-      // Se asume que las comprobaciones se hacen en AttendConnection para saber
-      // a quien se debe mandar el response, y si ese usuario existe y esta conectado
       auto mreq = std::static_pointer_cast<HSMP::MessageRequest>(request);
-      auto mres = std::make_shared<HSMP::MessageResponse>();
-      mres->tam_msg = mreq->tam_msg;
-      mres->msg = mreq->msg;
-      mres->tam_remitente = current_user.GetName().size();
-      mres->remitente = current_user.GetName();
-      return mres;
+      for (User &listed_user : *users) {
+        if (listed_user.GetName() == mreq->destinatario) {
+          if (listed_user.IsOnline()) {
+            auto mres = std::make_shared<HSMP::MessageResponse>();
+            mres->tam_msg = mreq->tam_msg;
+            mres->msg = mreq->msg;
+            mres->tam_remitente = (*current_user)->GetName().size();
+            mres->remitente = (*current_user)->GetName();
+            destinatario_FD = listed_user.GetFileDescriptor();
+            return mres;
+          } else {
+            auto eres = std::make_shared<HSMP::ErrorResponse>();
+            eres->message = kMessageErrorPersonDisconnected;
+            return eres;
+          }
+        }
+      }
+      auto eres = std::make_shared<HSMP::ErrorResponse>();
+      eres->message = kMessageErrorPersonDontExist;
+      return eres;
     }
 
     case HSMP::RequestType::kBroadcastRequest: {
-      // Se asume que el mismo mensaje se manda a todos los usuarios conectados
       auto breq = std::static_pointer_cast<HSMP::BroadcastRequest>(request);
       auto bres = std::make_shared<HSMP::BroadcastResponse>();
       bres->tam_msg = breq->tam_msg;
       bres->msg = breq->msg;
-      bres->tam_remitente = current_user.GetName().size();
-      bres->remitente = current_user.GetName();
+      bres->tam_remitente = (*current_user)->GetName().size();
+      bres->remitente = (*current_user)->GetName();
       return bres;
     }
 
     case HSMP::RequestType::kUploadFileRequest: {
       auto ureq = std::static_pointer_cast<HSMP::UploadFileRequest>(request);
-      auto ures = std::make_shared<HSMP::UploadFileResponse>();
-      ures->tam_file_name = ureq->tam_file_name;
-      ures->tam_file_data = ureq->tam_file_data;
-      ures->tam_remitente = current_user.GetName().size();
-      ures->file_name = ureq->file_name;
-      ures->remitente = current_user.GetName();
-      strcpy(ures->file_data, ureq->file_data);
-      return ures;
+
+      for (User &listed_user : *users) {
+        if (listed_user.GetName() == ureq->destinatario) {
+          if (listed_user.IsOnline()) {
+            auto ures = std::make_shared<HSMP::UploadFileResponse>();
+            ures->tam_file_name = ureq->tam_file_name;
+            ures->tam_file_data = ureq->tam_file_data;
+            ures->tam_remitente = (*current_user)->GetName().size();
+            ures->file_name = ureq->file_name;
+            ures->remitente = (*current_user)->GetName();
+            strcpy(ures->file_data, ureq->file_data);
+            return ures;
+          } else {
+            auto eres = std::make_shared<HSMP::ErrorResponse>();
+            eres->message = kMessageErrorPersonDisconnected;
+            return eres;
+          }
+        }
+      }
+
+      auto eres = std::make_shared<HSMP::ErrorResponse>();
+      eres->message = kMessageErrorPersonDontExist;
+      return eres;
     }
 
       // UploadRequest deberia devolver un File_ANResponse al destinatario
@@ -236,19 +359,19 @@ std::shared_ptr<HSMP::ServerResponse> CreateResponse(
     case HSMP::RequestType::kFile_ANRequest: {
       auto freq = std::static_pointer_cast<HSMP::File_ANRequest>(request);
       auto fres = std::make_shared<HSMP::File_ANResponse>();
-      fres->tam_user_name = current_user.GetName().size();
-      fres->user_name = current_user.GetName();
+      fres->tam_user_name = (*current_user)->GetName().size();
+      fres->user_name = (*current_user)->GetName();
       return fres;
     }
 
     case HSMP::RequestType::kExitRequest: {
       auto xres = std::make_shared<HSMP::ExitResponse>();
-      current_user.SetOffline();
+      (*current_user)->SetOffline();
       return xres;
     }
 
     default: {
-      std::cout << "wrong input" << std::endl;
+      std::cout << "This won't be never print" << std::endl;
       return nullptr;
     }
   }
