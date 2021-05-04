@@ -1,6 +1,9 @@
 #include "HSMPResponse.hpp"
+#include "utils/base64.hpp"
 #include <iostream>
 #include <vector>
+#include <fstream>
+#include <algorithm>
 
 namespace HSMP {
 
@@ -154,16 +157,21 @@ char *BroadcastResponse::ParseToCharBuffer() const {
 void UploadFileResponse::PrintStructure() const {
   std::cout << "UploadFileResponse:\n";
   //std::cout << "\tfile name tam: " << this->tam_file_name << "\n";
-  std::cout << "\tfile: " << this-> file_name << "\n";
+  std::cout << "\tfile: " << this->file_name << "\n";
   //std::cout << "\tfile tam: " << this-> tam_file_data << "\n";
-  std::cout << "\tfile_data: " << this-> file_data << "\n";
+  //std::cout << "\tfile_data: " << this-> file_data << "\n";
   //std::cout << "\tremitente tam: " << this-> tam_remitente << "\n";
   std::cout << "\tremitente: " << this->remitente << std::endl;
+  Base64Formatter formatter;
+  std::ofstream file(this->file_name, std::ios::binary);
+  file << formatter.decode(this->file_data);
+  file.close();
+  std::cout << "File saved locally!\n";
 }
 
 char *UploadFileResponse::ParseToCharBuffer() const {
   std::string parsed_structure("U");
-
+  
   if (this->file_name.length() <= 99) {
     parsed_structure += "0";
 
@@ -239,6 +247,7 @@ std::shared_ptr<ServerResponse> ProcessResponse(int connectionFD) {
   bzero(buffer, 1000);
   recv(connectionFD, buffer, 1000, 0);
   //printf("Server: %s\n", buffer);
+  // cundo el buffer es muy grande -> crash!
   
   if (buffer[0] == '\0'){
     return nullptr;
@@ -316,11 +325,30 @@ std::shared_ptr<ServerResponse> ProcessResponse(int connectionFD) {
       Ures->tam_file_name = stoi(s.substr(1, 3));
       Ures->tam_file_data = stoi(s.substr(4, 10));
       Ures->tam_remitente = stoi(s.substr(14, 2));
-
       Ures->file_name = s.substr(16, Ures->tam_file_name);
-      Ures->file_name = s.substr(16 + Ures->tam_file_name, Ures->tam_file_data);
-      Ures->remitente = s.substr(16 + Ures->tam_file_name + Ures->tam_file_data, Ures->tam_remitente);
 
+      std::string file_data;
+      int max_size = Ures->tam_file_data;
+      int current_size = std::min(max_size, 1000 - 16 - Ures->tam_file_name);
+      file_data = s.substr(16 + Ures->tam_file_name, current_size);
+      max_size -= current_size;
+      if (max_size) {
+        while (max_size) {
+          recv(connectionFD, buffer, 1000, 0);
+          s = buffer;
+          current_size = std::min(max_size, 1000);
+          file_data += s.substr(0, current_size);
+          max_size -= current_size;
+        }
+        Ures->remitente = s.substr(current_size,
+                                   Ures->tam_remitente);
+      }
+      else
+        Ures->remitente = s.substr(16 + Ures->tam_file_name + Ures->tam_file_data,
+                                   Ures->tam_remitente);
+
+      Ures->file_data = file_data;
+      
       return Ures;
     }
 

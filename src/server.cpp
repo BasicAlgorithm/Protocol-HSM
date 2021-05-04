@@ -134,7 +134,9 @@ void AttendConnection(int client_socket, sockaddr_in client_addr) {
       for (User &listed_user : *users) {
         if (listed_user.GetName() == (*current_user)->GetName()) continue;
         if (listed_user.IsOnline()) {
-          send(listed_user.GetFileDescriptor(), res->ParseToCharBuffer(), strlen(res->ParseToCharBuffer()), 0);
+          send(listed_user.GetFileDescriptor(),
+               res->ParseToCharBuffer(),
+               strlen(res->ParseToCharBuffer()), 0);
         }
       }
 
@@ -147,7 +149,22 @@ void AttendConnection(int client_socket, sockaddr_in client_addr) {
     }
 
     if (res->type() == HSMP::kMessageResponse) {
-      send(destinatario_FD, res->ParseToCharBuffer(), strlen(res->ParseToCharBuffer()), 0);
+      send(destinatario_FD,
+           res->ParseToCharBuffer(),
+           strlen(res->ParseToCharBuffer()), 0);
+      
+      mid_log += " -> Accept";
+      logs.push_back(mid_log);
+      mid_log.clear();
+
+      PrintScreenServer();
+      continue;
+    }
+
+    if (res->type() == HSMP::kUploadFileResponse) {
+      send(destinatario_FD,
+           res->ParseToCharBuffer(),
+           strlen(res->ParseToCharBuffer()), 0);
       
       mid_log += " -> Accept";
       logs.push_back(mid_log);
@@ -338,7 +355,8 @@ std::shared_ptr<HSMP::ServerResponse> CreateResponse(
             ures->tam_remitente = (*current_user)->GetName().size();
             ures->file_name = ureq->file_name;
             ures->remitente = (*current_user)->GetName();
-            strcpy(ures->file_data, ureq->file_data);
+            ures->file_data = ureq->file_data;
+            destinatario_FD = listed_user.GetFileDescriptor();
             return ures;
           } else {
             auto eres = std::make_shared<HSMP::ErrorResponse>();

@@ -95,7 +95,7 @@ struct UploadFileRequest : ClientRequest {
   short int tam_file_data;
   short int tam_destinatario;
   std::string file_name;
-  char* file_data;
+  std::string file_data;
   std::string destinatario;
 
   UploadFileRequest() : ClientRequest('u', kUploadFileRequest) {}

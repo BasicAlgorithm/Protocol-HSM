@@ -117,7 +117,6 @@ void UploadFileRequest::PrintStructure() const {
   std::cout << "\tfile nombre tam: " << this->tam_file_name << "\n";
   std::cout << "\tfile nombre: " << this->file_name << "\n";
   std::cout << "\tfile tam: " << this->tam_file_data << "\n";
-  std::cout << "\tdestinatario tam: " << this->file_data << "\n";
   std::cout << "\ttam_destinatario: " << this->tam_destinatario << "\n";
   std::cout << "\tdestinatario : " << this->destinatario << std::endl;
 }
@@ -146,8 +145,7 @@ char* UploadFileRequest::ParseToCharBuffer() const {
 
   parsed_structure += file_name + file_data + destinatario;
   char* buffer= new char[parsed_structure.length() + 1];
-  std::size_t length = parsed_structure.copy(buffer, parsed_structure.length(),
-                       0);
+  std::size_t length = parsed_structure.copy(buffer, parsed_structure.length(), 0);
   buffer[length]='\0';
 
   // std::cout << "\tUploadFileRequest sending to server: " << buffer << std::endl;
@@ -264,16 +262,29 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket,
       ureq->tam_file_name = stoi(s.substr(1, 3));
       ureq->tam_file_data = stoi(s.substr(4, 10));
       ureq->tam_destinatario = stoi(s.substr(14, 2));
-
       ureq->file_name = s.substr(16, ureq->tam_file_name);
 
-      ureq->file_data = new char[ureq->tam_file_data];
-      strcpy(ureq->file_data, s.substr(16 + ureq->tam_file_name,
-                                       ureq->tam_file_data).c_str());
+      std::string file_data;
+      int max_size = ureq->tam_file_data;
+      int current_size = std::min(max_size, 1000 - 16 - ureq->tam_file_name);
+      file_data = s.substr(16 + ureq->tam_file_name, current_size);
+      max_size -= current_size;
+      if (max_size) {
+        while (max_size) {
+          recv(connection_socket, buffer, 1000, 0);
+          s = buffer;
+          current_size = std::min(max_size, 1000);
+          file_data += s.substr(0, current_size);
+          max_size -= current_size;
+        }
+        ureq->destinatario = s.substr(current_size,
+                                      ureq->tam_destinatario);
+      }
+      else
+        ureq->destinatario = s.substr(16 + ureq->tam_file_name + ureq->tam_file_data,
+                                      ureq->tam_destinatario);
 
-      ureq->destinatario = s.substr(16 + ureq->tam_file_name + ureq->tam_file_data,
-                                    ureq->tam_destinatario);
-
+      ureq->file_data = file_data;
       
       mid_log = "UploadFile to ";
       mid_log += ureq->destinatario;
