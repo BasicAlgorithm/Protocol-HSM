@@ -216,8 +216,8 @@ char *ExitResponse::ParseToCharBuffer() const {
 }
 
 void ErrorResponse::PrintStructure() const {
-  std::cout << "ErrorResponse:\n";
-  std::cout << "\tmessage: " << this->message << std::endl;
+  std::cout << "SERVER ERROR:\n";
+  std::cout << "\t[Error type: " << this->message << std::endl;
 }
 
 char *ErrorResponse::ParseToCharBuffer() const {

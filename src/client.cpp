@@ -93,7 +93,7 @@ int main(void) {
   int connection_socket = Connect("127.0.0.1", 45000);
   std::thread response_listener(WaitForResponses, connection_socket);
 
-  while(!KLoginAccepted) {
+  while(!KLoginAccepted && KConnectedWithserver) {
 
     auto lreq = std::make_shared<HSMP::LoginRequest>();
     std::cout << "Creating Login Request" << '\n';
@@ -106,7 +106,7 @@ int main(void) {
     lreq->tam_user = lreq->user.size();
     lreq->tam_passwd = lreq->passwd.size();
 
-    send(connection_socket, lreq->ParseToCharBuffer(), Klenght, 0);
+    send(connection_socket, lreq->ParseToCharBuffer(), strlen(lreq->ParseToCharBuffer()), 0);
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
   }
@@ -127,7 +127,7 @@ int main(void) {
     
     if (req) {
       //printf("mensaje parseado: %s\n", req->ParseToCharBuffer());
-      send(connection_socket, req->ParseToCharBuffer(), Klenght, 0);
+      send(connection_socket, req->ParseToCharBuffer(), strlen(req->ParseToCharBuffer()), 0);
     }
     
     if (req->type() == HSMP::kExitRequest) {

@@ -25,11 +25,11 @@
 const int KMaxLogs = 8;
 std::mutex mtx;
 
-const std::string kMessageWrongCredentials        ("[SERVER: wrongCrednt");
-const std::string kMessageErrorPersonDisconnected ("[SERVER: prsonDiscon");
-const std::string kMessageErrorPersonDontExist    ("[SERVER: persNoExist");
-const std::string KMessageWellHacked              ("[SERVER: wellHacked!");
-const std::string KMessageAlreadyOnline           ("[SERVER: alreadOnlin");
+const std::string kMessageWrongCredentials        ("_Wrong_Credentials_]");
+const std::string kMessageErrorPersonDisconnected ("_Person_is_Offline_]");
+const std::string kMessageErrorPersonDontExist    ("_Person_dont_exist_]");
+const std::string KMessageWellHacked              ("Well_Hacked_but_not]");
+const std::string KMessageAlreadyOnline           ("User_already_Online]");
 
 auto firsts_users = { User("Joaquin", "gaa"),
                       User("Mateo", "gee"),
@@ -95,18 +95,28 @@ void AttendConnection(int client_socket, sockaddr_in client_addr) {
   int destinatario_FD;
   std::string ip = inet_ntoa(client_addr.sin_addr);
   int port = ntohs(client_addr.sin_port);
+  std::string mid_log("");
 
   while (1) {
 
     // PHASE 02
-    auto req = HSMP::ProcessRequest(client_socket, logs/*, current_user*/);
-
+    auto req = HSMP::ProcessRequest(client_socket, mid_log);
+    
     // This happen if client shut down or disconnect
     if (req == nullptr) {
-      (*current_user)->SetOffline();
+      if ((*current_user) != nullptr) {
+        (*current_user)->SetOffline();
+        mid_log += (*current_user)->GetName();
+      }
+      logs.push_back(mid_log);
       PrintScreenServer();
       break;
     }
+
+    // Trying to better format logs 1
+    if (req->type() != HSMP::kLoginRequest)
+      mid_log += (*current_user)->GetName();
+    
 
     // PHASE 03
     auto res = std::shared_ptr<HSMP::ServerResponse>();
@@ -127,20 +137,46 @@ void AttendConnection(int client_socket, sockaddr_in client_addr) {
           send(listed_user.GetFileDescriptor(), res->ParseToCharBuffer(), strlen(res->ParseToCharBuffer()), 0);
         }
       }
+
+      mid_log += " -> Accept";
+      logs.push_back(mid_log);
+      mid_log.clear();
+      
+      PrintScreenServer();
       continue;
     }
 
     if (res->type() == HSMP::kMessageResponse) {
       send(destinatario_FD, res->ParseToCharBuffer(), strlen(res->ParseToCharBuffer()), 0);
+      
+      mid_log += " -> Accept";
+      logs.push_back(mid_log);
+      mid_log.clear();
+
+      PrintScreenServer();
       continue;
     }
 
     if (res->type() == HSMP::kExitResponse) {
+
+      mid_log += " -> Accept";
+      logs.push_back(mid_log);
+
       send(client_socket, res->ParseToCharBuffer(), strlen(res->ParseToCharBuffer()), 0);
       PrintScreenServer();
       break;
     }
     
+    // Trying to better format logs 2
+    if (res->type() == HSMP::kErrorResponse) {
+      mid_log += " -> Reject";
+    } else {
+      mid_log += " -> Accept";
+    }
+    logs.push_back(mid_log);
+    mid_log.clear();
+
+
     send(client_socket, res->ParseToCharBuffer(), strlen(res->ParseToCharBuffer()), 0);
     PrintScreenServer();
   }

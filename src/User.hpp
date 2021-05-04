@@ -1,4 +1,5 @@
-#pragma once
+#ifndef USER_
+#define USER_
 #include <string>
 
 class User {
@@ -83,3 +84,4 @@ int User::GetFileDescriptor() {
   return file_descriptor_;
 }
 
+#endif // USER_
