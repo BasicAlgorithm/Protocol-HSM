@@ -51,6 +51,13 @@ void WaitForResponses(int connection_socket) {
       KLoginAccepted = true;
     }
 
+    res->PrintStructure();
+
+    // To break login infinity loop
+    if (res->type() == HSMP::kLoginResponse) {
+      KLoginAccepted = true;
+    }
+
     if (res->type() == HSMP::kExitResponse) {
       break;
     }
@@ -130,7 +137,6 @@ int main(void) {
     
     if (req) {
       //printf("mensaje parseado: %s\n", req->ParseToCharBuffer());
-      //std::cout<<req->ParseToCharBuffer()<<'\n';
       send(connection_socket, req->ParseToCharBuffer(), strlen(req->ParseToCharBuffer()), 0);
     }
     
@@ -139,7 +145,8 @@ int main(void) {
     }
   
   }
-  std::cout << "\n Disconnecting...\n";
+  std::cout << "\n Disconnecting... ";
+
   response_listener.join();
 
   shutdown(connection_socket, SHUT_RDWR);

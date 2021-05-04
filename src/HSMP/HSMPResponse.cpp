@@ -4,6 +4,8 @@
 #include <vector>
 #include <fstream>
 #include <algorithm>
+#include <iostream>
+#include <vector>
 
 namespace HSMP {
 

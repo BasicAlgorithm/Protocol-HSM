@@ -290,6 +290,11 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket,
       mid_log += ureq->destinatario;
       mid_log += " from ";
 
+      
+      mid_log = "UploadFile to ";
+      mid_log += ureq->destinatario;
+      mid_log += " from ";
+
       return ureq;
     }
 
