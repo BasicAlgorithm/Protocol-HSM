@@ -18,7 +18,6 @@
 #include "HSMP/HSMPRequest.hpp"
 #include "HSMP/HSMPResponse.hpp"
 
-const int Klenght = 50;
 bool KLoginAccepted = false;
 bool KConnectedWithserver = true;
 
