@@ -210,15 +210,22 @@ std::shared_ptr<HSMP::ClientRequest> CreateRequest() {
       std::string path;
       getline(std::cin, path);
 
-      std::ifstream file(path, std::ios::binary);
+      std::ifstream file(path, std::ios::binary | std::ios::ate);
       if (file.is_open()) {
         Base64Formatter formatter;
-        std::string buffer(std::istreambuf_iterator<char>(file), {});
+        std::streampos data_size;
+        char* memblock;
 
-        ureq->file_data = formatter.encode(buffer.c_str(), buffer.length());
+        data_size = file.tellg();
+        memblock = new char[data_size];
+        file.seekg (0, std::ios::beg);
+        file.read (memblock, data_size);
+        file.close();
+
+        ureq->file_data = formatter.encode(memblock, data_size);
         ureq->tam_file_data = ureq->file_data.size();
-        std::cout << ureq->file_data << std::endl;
-        std::cout << ureq->tam_file_data << std::endl;
+
+        delete[] memblock;
       }
       else {
         std::cout << "Unable to open file\n";

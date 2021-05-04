@@ -92,7 +92,7 @@ struct BroadcastRequest : ClientRequest {
 
 struct UploadFileRequest : ClientRequest {
   short int tam_file_name;
-  short int tam_file_data;
+  int tam_file_data;
   short int tam_destinatario;
   std::string file_name;
   std::string file_data;
