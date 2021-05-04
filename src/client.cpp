@@ -41,10 +41,6 @@ void WaitForResponses(int connection_socket) {
       KConnectedWithserver = false;
       break;
     }
-    
-    res->PrintStructure();
-
-    // If (upload)
 
     // To break login infinity loop
     if (res->type() == HSMP::kLoginResponse) {
