@@ -59,10 +59,10 @@ void MessageRequest::PrintStructure() const {
 char* MessageRequest::ParseToCharBuffer() const {
   std::string parsed_structure("m");
 
-  if (this->msg.length() <= 99) {
+  if (this->tam_msg <= 99) {
     parsed_structure += "0";
 
-    if (this->msg.length() <= 9)
+    if (this->tam_msg <= 9)
       parsed_structure += "0";
   }
 
@@ -193,11 +193,10 @@ char* ExitRequest::ParseToCharBuffer() const {
 }
 
 std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket, 
-                                              int &bytes_received, 
                                               std::list<std::string> &logs
                                               /*User *&current_user*/) {
   char buffer[1000] = {0};
-  bytes_received = recv(connection_socket, buffer, 1000, 0);
+  recv(connection_socket, buffer, 1000, 0);
 
   if (buffer[0] == '\0')
     return std::make_shared<ExitRequest>();

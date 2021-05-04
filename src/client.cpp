@@ -19,7 +19,7 @@
 #include "HSMP/HSMPResponse.hpp"
 
 const int Klenght = 50;
-bool login_correct = false;
+bool KLoginAccepted = false;
 
 std::shared_ptr<HSMP::ClientRequest> CreateRequest();
 
@@ -34,7 +34,7 @@ void WaitForResponses(int connection_socket) {
     res->PrintStructure();
 
     if (res->type() == HSMP::kLoginResponse) {
-      login_correct = true;
+      KLoginAccepted = true;
     }
 
     if (first_char == '\0') {
@@ -86,7 +86,7 @@ int main(void) {
   int connection_socket = Connect("127.0.0.1", 45000);
   std::thread response_listener(WaitForResponses, connection_socket);
 
-  while(!login_correct) {
+  while(!KLoginAccepted) {
 
     auto lreq = std::make_shared<HSMP::LoginRequest>();
     std::cout << "Creating Login Request" << '\n';

@@ -37,6 +37,8 @@ class User {
 User::User (std::string ip, std::string user_name, std::string user_password) :
   ip_(ip), user_name_(user_name), user_password_(user_password), is_online_(0) {};
 
+User::User (){}
+
 void User::OneMoreConnection() {
   quantity_of_connections_++;
 }

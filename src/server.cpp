@@ -44,8 +44,8 @@ auto users = std::make_shared<std::list<User>>(firsts_users);
 std::list<std::string> logs;
 
 std::shared_ptr<HSMP::ServerResponse> CreateResponse(
-    std::shared_ptr<HSMP::ClientRequest> request, User *&current_user, 
-    int client_socket, int &destinatario_FD);
+    std::shared_ptr<HSMP::ClientRequest> request, std::shared_ptr<User*> current_user, 
+    int &destinatario_FD);
 
 void PrintScreenServer() {
   mtx.lock();
@@ -98,22 +98,20 @@ void AttendConnection(int client_socket, sockaddr_in client_addr) {
   //          ", " <<
   //          ntohs(client_addr.sin_port) << ") in socket " << client_socket <<
   //          std::endl;
-  int bytes_received;
-  bool login_correct = false;
-  std::string destinatario_name;
-  User *current_user;
+  //std::shared_ptr<User> current_user;
+  auto current_user = std::make_shared<User*>();
   int destinatario_FD;
   std::string ip = inet_ntoa(client_addr.sin_addr);
 
   while (1) {
 
     // PHASE 02
-    auto req = HSMP::ProcessRequest(client_socket, bytes_received, logs/*, current_user*/);
+    auto req = HSMP::ProcessRequest(client_socket, logs/*, current_user*/);
     req->PrintStructure();
 
     PrintScreenServer();
 
-    if ((req->type() == HSMP::kExitRequest) || (bytes_received <= 0)) {
+    if ((req->type() == HSMP::kExitRequest)) {
       shutdown(client_socket, SHUT_RDWR);
       close(client_socket);
       break;
@@ -121,15 +119,19 @@ void AttendConnection(int client_socket, sockaddr_in client_addr) {
 
     // PHASE 03
     auto res = std::shared_ptr<HSMP::ServerResponse>();
-    res = CreateResponse(req, current_user, client_socket, destinatario_FD);
+    res = CreateResponse(req, current_user, destinatario_FD);
 
     if (res->type() == HSMP::kLoginResponse) {
-      current_user->SetIP(ip);
+      (*current_user)->SetIP(ip);
+      (*current_user)->SetFileDescriptor(client_socket);
+      (*current_user)->OneMoreConnection();
+      (*current_user)->SetOnline();
+      PrintScreenServer();
     }
 
     if (res->type() == HSMP::kBroadcastResponse) {
       for (User &listed_user : *users) {
-        if (listed_user.GetName() == current_user->GetName()) continue;
+        if (listed_user.GetName() == (*current_user)->GetName()) continue;
         if (listed_user.IsOnline()) {
           send(listed_user.GetFileDescriptor(), res->ParseToCharBuffer(), 50, 0);
         }
@@ -211,8 +213,9 @@ int main () {
 }
 
 std::shared_ptr<HSMP::ServerResponse> CreateResponse(
-    std::shared_ptr<HSMP::ClientRequest> request, User *&current_user, 
-    int client_socket, int &destinatario_FD) {
+  std::shared_ptr<HSMP::ClientRequest> request,
+  std::shared_ptr<User*> current_user,
+  int &destinatario_FD) {
 
   switch (request->type()) {
 
@@ -221,19 +224,11 @@ std::shared_ptr<HSMP::ServerResponse> CreateResponse(
       auto lreq = std::static_pointer_cast<HSMP::LoginRequest>(request);
       auto lres = std::make_shared<HSMP::LoginResponse>();
 
-      for (std::list<User>::iterator user = users->begin();
-          user != users->end();
-          ++user){
-        
-        if (user->GetName() == lreq->user) {
-          if (user->GetPassword() == lreq->passwd) {
+      for (User &user : *users) {
+        if (user.GetName() == lreq->user) {
+          if (user.GetPassword() == lreq->passwd) {
             lres->ok = "ok";
-            current_user = &(*user);
-            current_user->OneMoreConnection();
-            current_user->SetFileDescriptor(client_socket);
-            current_user->SetOnline();
-            //current_user->SetIP(); // CONSEGUIR IP PARA ACTUALIZAR A USER
-            PrintScreenServer();
+            *current_user = &user;
             return lres;
           }
           auto eres = std::make_shared<HSMP::ErrorResponse>();
@@ -249,7 +244,7 @@ std::shared_ptr<HSMP::ServerResponse> CreateResponse(
     case HSMP::RequestType::kListaRequest: {
       auto ires = std::make_shared<HSMP::ListaResponse>();
       for (User &listed_user : *users) {
-        if (listed_user.GetName() == current_user->GetName()) continue;
+        if (listed_user.GetName() == (*current_user)->GetName()) continue;
         if (listed_user.IsOnline()) {
           ires->tam_user_names.push_back(listed_user.GetName().size());
           ires->user_names.push_back(listed_user.GetName());
@@ -267,8 +262,8 @@ std::shared_ptr<HSMP::ServerResponse> CreateResponse(
             auto mres = std::make_shared<HSMP::MessageResponse>();
             mres->tam_msg = mreq->tam_msg;
             mres->msg = mreq->msg;
-            mres->tam_remitente = current_user->GetName().size();
-            mres->remitente = current_user->GetName();
+            mres->tam_remitente = (*current_user)->GetName().size();
+            mres->remitente = (*current_user)->GetName();
             destinatario_FD = listed_user.GetFileDescriptor();
             return mres;
           } else {
@@ -288,8 +283,8 @@ std::shared_ptr<HSMP::ServerResponse> CreateResponse(
       auto bres = std::make_shared<HSMP::BroadcastResponse>();
       bres->tam_msg = breq->tam_msg;
       bres->msg = breq->msg;
-      bres->tam_remitente = current_user->GetName().size();
-      bres->remitente = current_user->GetName();
+      bres->tam_remitente = (*current_user)->GetName().size();
+      bres->remitente = (*current_user)->GetName();
       return bres;
     }
 
@@ -302,9 +297,9 @@ std::shared_ptr<HSMP::ServerResponse> CreateResponse(
             auto ures = std::make_shared<HSMP::UploadFileResponse>();
             ures->tam_file_name = ureq->tam_file_name;
             ures->tam_file_data = ureq->tam_file_data;
-            ures->tam_remitente = current_user->GetName().size();
+            ures->tam_remitente = (*current_user)->GetName().size();
             ures->file_name = ureq->file_name;
-            ures->remitente = current_user->GetName();
+            ures->remitente = (*current_user)->GetName();
             strcpy(ures->file_data, ureq->file_data);
             return ures;
           } else {
@@ -326,14 +321,14 @@ std::shared_ptr<HSMP::ServerResponse> CreateResponse(
     case HSMP::RequestType::kFile_ANRequest: {
       auto freq = std::static_pointer_cast<HSMP::File_ANRequest>(request);
       auto fres = std::make_shared<HSMP::File_ANResponse>();
-      fres->tam_user_name = current_user->GetName().size();
-      fres->user_name = current_user->GetName();
+      fres->tam_user_name = (*current_user)->GetName().size();
+      fres->user_name = (*current_user)->GetName();
       return fres;
     }
 
     case HSMP::RequestType::kExitRequest: {
       auto xres = std::make_shared<HSMP::ExitResponse>();
-      current_user->SetOffline();
+      (*current_user)->SetOffline();
       return xres;
     }
 
