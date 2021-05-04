@@ -125,7 +125,7 @@ int main(void) {
 
   while (KConnectedWithserver) {
     // To intent orden print
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::this_thread::sleep_for(std::chrono::milliseconds(120));
 
     auto req = std::shared_ptr<HSMP::ClientRequest>();
     req = CreateRequest();
