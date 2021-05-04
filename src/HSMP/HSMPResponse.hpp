@@ -143,6 +143,6 @@ struct ErrorResponse : ServerResponse {
 
 };
 
-std::shared_ptr<ServerResponse> ProcessResponse(int connectionFD, char &first_char);
+std::shared_ptr<ServerResponse> ProcessResponse(int connectionFD);
 
 }

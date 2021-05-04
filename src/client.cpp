@@ -24,25 +24,27 @@ bool KLoginAccepted = false;
 std::shared_ptr<HSMP::ClientRequest> CreateRequest();
 
 void WaitForResponses(int connection_socket) {
-  char first_char;
 
   while (1) {
 
     // PHASE 04
     auto res = std::shared_ptr<HSMP::ServerResponse>();
-    res = HSMP::ProcessResponse(connection_socket, first_char);
-    res->PrintStructure();
+
+    res = HSMP::ProcessResponse(connection_socket);
+
+    if (res == nullptr) {
+      std::cout << "\n[SERVER: Connection to server ended, sorry for any inconvenient]" <<
+                std::endl;
+      shutdown(connection_socket, SHUT_RDWR);
+      close(connection_socket); 
+      std::terminate();
+    }
 
     if (res->type() == HSMP::kLoginResponse) {
       KLoginAccepted = true;
     }
 
-    if (first_char == '\0') {
-      std::cout << "CONNECTION TO SERVER ENDED. ANY FOLLOWING MESSAGES WILL FAIL" <<
-                std::endl;
-      close(connection_socket);
-      break;
-    }
+    res->PrintStructure();
 
   }
 }
@@ -107,6 +109,10 @@ int main(void) {
   while (1) {
     auto req = std::shared_ptr<HSMP::ClientRequest>();
     req = CreateRequest();
+
+    if((req == nullptr)){
+      continue;
+    }
     
     if (req) {
       //printf("mensaje parseado: %s\n", req->ParseToCharBuffer());
@@ -215,7 +221,7 @@ std::shared_ptr<HSMP::ClientRequest> CreateRequest() {
     }
 
     default: {
-      std::cout << "Wrong input" << std::endl;
+      std::cout << "[SERVER: wrong_key_request]" << std::endl;
       return nullptr;
     }
   }

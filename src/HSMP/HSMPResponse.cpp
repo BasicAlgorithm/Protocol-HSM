@@ -233,12 +233,16 @@ char *ErrorResponse::ParseToCharBuffer() const {
 
 }
 
-std::shared_ptr<ServerResponse> ProcessResponse(int connectionFD, char &first_char) {
+std::shared_ptr<ServerResponse> ProcessResponse(int connectionFD) {
+  
   char buffer[1000] = {0};
   bzero(buffer, 1000);
   recv(connectionFD, buffer, 1000, 0);
   //printf("Server: %s\n", buffer);
-  first_char = buffer[0];
+  
+  if (buffer[0] == '\0'){
+    return nullptr;
+  }
 
   char action = buffer[0];
   std::string s = buffer;
@@ -338,6 +342,10 @@ std::shared_ptr<ServerResponse> ProcessResponse(int connectionFD, char &first_ch
       Eres->message = s.substr(1,20);
 
       return Eres;
+    }
+
+    case '\0': {
+      return nullptr;
     }
 
     default:
