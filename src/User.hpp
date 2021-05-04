@@ -14,7 +14,7 @@ class User {
 
  public:
 
-  User(std::string ip, std::string user_name, std::string user_password);
+  User(std::string user_name, std::string user_password);
   
   User();
 
@@ -34,8 +34,8 @@ class User {
 
 // =============================================================================
 
-User::User (std::string ip, std::string user_name, std::string user_password) :
-  ip_(ip), user_name_(user_name), user_password_(user_password), is_online_(0) {};
+User::User (std::string user_name, std::string user_password) :
+  user_name_(user_name), user_password_(user_password), is_online_(0) {};
 
 User::User (){}
 

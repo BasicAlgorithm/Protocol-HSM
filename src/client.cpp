@@ -20,6 +20,7 @@
 
 const int Klenght = 50;
 bool KLoginAccepted = false;
+bool KConnectedWithserver = true;
 
 std::shared_ptr<HSMP::ClientRequest> CreateRequest();
 
@@ -32,20 +33,24 @@ void WaitForResponses(int connection_socket) {
 
     res = HSMP::ProcessResponse(connection_socket);
 
+    // This happen if server shut down or disconnect
     if (res == nullptr) {
       std::cout << "\n[SERVER: Connection to server ended, sorry for any inconvenient]" <<
                 std::endl;
-      shutdown(connection_socket, SHUT_RDWR);
-      close(connection_socket); 
-      std::terminate();
-    }
-
-    if (res->type() == HSMP::kLoginResponse) {
-      KLoginAccepted = true;
+      KConnectedWithserver = false;
+      break;
     }
 
     res->PrintStructure();
 
+    // To break login infinity loop
+    if (res->type() == HSMP::kLoginResponse) {
+      KLoginAccepted = true;
+    }
+
+    if (res->type() == HSMP::kExitResponse) {
+      break;
+    }
   }
 }
 
@@ -105,12 +110,18 @@ int main(void) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
   }
+
   system("clear");
-  while (1) {
+
+  while (KConnectedWithserver) {
+
+    // To intent orden print
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
     auto req = std::shared_ptr<HSMP::ClientRequest>();
     req = CreateRequest();
 
-    if((req == nullptr)){
+    if ((req == nullptr) || !KConnectedWithserver){
       continue;
     }
     
@@ -118,10 +129,14 @@ int main(void) {
       //printf("mensaje parseado: %s\n", req->ParseToCharBuffer());
       send(connection_socket, req->ParseToCharBuffer(), Klenght, 0);
     }
+    
     if (req->type() == HSMP::kExitRequest) {
       break;
     }
+  
   }
+  std::cout << "\n Disconnecting... ";
+  response_listener.join();
 
   shutdown(connection_socket, SHUT_RDWR);
   close(connection_socket);

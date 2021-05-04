@@ -22,22 +22,21 @@
 #include "HSMP/HSMPRequest.hpp"
 #include "HSMP/HSMPResponse.hpp"
 
-const int Klenght = 50;
 const int KMaxLogs = 8;
 std::mutex mtx;
 
-const std::string kMessageErrorPassword ("[HSMP] password_wrong");
-const std::string kMessageErrorPersonDisconnected ("[HSMP] person_discon");
-const std::string kMessageErrorPersonDontExist ("[HSMP] pers_no_exist");
-const std::string kMessageErrorUserDontExist ("[HSMP] user_no_exist");
-const std::string kMessageErrorNoLogin ("[HSMP] not_login");
+const std::string kMessageWrongCredentials        ("[SERVER: wrongCrednt");
+const std::string kMessageErrorPersonDisconnected ("[SERVER: prsonDiscon");
+const std::string kMessageErrorPersonDontExist    ("[SERVER: persNoExist");
+const std::string KMessageWellHacked              ("[SERVER: wellHacked!");
+const std::string KMessageAlreadyOnline           ("[SERVER: alreadOnlin");
 
-auto firsts_users = { User("127.0.0.1", "Joaquin", "gaa"),
-       User("127.0.0.1", "Mateo", "gee"),
-       User("127.0.0.1", "Miguel", "gii"),
-       User("127.0.0.1", "ElPepe", "ucsp"),
-       User("127.0.0.1", "guest1", "guest1"),
-       User("127.0.0.1", "guest2", "guest2"),
+auto firsts_users = { User("Joaquin", "gaa"),
+                      User("Mateo", "gee"),
+                      User("Miguel", "gii"),
+                      User("ElPepe", "ucsp"),
+                      User("guest1", "guest1"),
+                      User("guest2", "guest2"),
 };
 
 auto users = std::make_shared<std::list<User>>(firsts_users);
@@ -56,9 +55,8 @@ void PrintScreenServer() {
   std::cout << "|                All User                   |" << std::endl;
   std::cout << "+-------------------------------------------+" << std::endl;
 
-  for (std::list<User>::iterator user = users->begin(); user != users->end();
-       ++user)
-    std::cout << "|" << std::setw(10) << user->GetName() << std::setw(34) << "|" << std::endl;
+  for (User &user : *users)
+    std::cout << "|" << std::setw(10) << user.GetName() << std::setw(34) << "|" << std::endl;
 
   std::cout << "+-------------------------------------------+" << std::endl;
   std::cout << "|                Active Users               |" << std::endl;
@@ -70,13 +68,12 @@ void PrintScreenServer() {
             << std::setw(8) << "FD"
             << std::setw(8) << "QC" << " |" << std::endl;
 
-  for (std::list<User>::iterator user = users->begin(); user != users->end();
-       ++user) {
-    if (user->IsOnline()) std::cout <<  "| " 
-                                    << std::setw(10) << user->GetName() 
-                                    << std::setw(15) << user->GetIp()
-                                    << std::setw(8) << user->GetFileDescriptor()
-                                    << std::setw(8) << user->GetQuantityOfConnections() 
+  for (User &user : *users) {
+    if (user.IsOnline()) std::cout <<  "| " 
+                                    << std::setw(10) << user.GetName() 
+                                    << std::setw(15) << user.GetIp()
+                                    << std::setw(8) << user.GetFileDescriptor()
+                                    << std::setw(8) << user.GetQuantityOfConnections() 
                                     << " |" << std::endl;
   }
 
@@ -85,35 +82,29 @@ void PrintScreenServer() {
   std::cout << "+-------------------------------------------+" << std::endl;
   if (logs.size() == 0) std::cout << "|\tno request yet"  << std::setw(23) << "" << std::endl;
   if (logs.size() >= KMaxLogs) logs.pop_front();
-  for (std::list<std::string>::iterator log = logs.begin(); log != logs.end();
-       ++log)
-    std::cout << "| " << std::setw(24) << *log << std::setw(8) << "" << std::endl;
+  for (std::string &log : logs)
+    std::cout << "| " << std::setw(24) << log << std::setw(8) << "" << std::endl;
 
   std::cout << "+-------------------------------------------+" << std::endl;
   mtx.unlock();
 }
 
 void AttendConnection(int client_socket, sockaddr_in client_addr) {
-  //std::cout << "Processing requests for (" << inet_ntoa(client_addr.sin_addr) <<
-  //          ", " <<
-  //          ntohs(client_addr.sin_port) << ") in socket " << client_socket <<
-  //          std::endl;
-  //std::shared_ptr<User> current_user;
+
   auto current_user = std::make_shared<User*>();
   int destinatario_FD;
   std::string ip = inet_ntoa(client_addr.sin_addr);
+  int port = ntohs(client_addr.sin_port);
 
   while (1) {
 
     // PHASE 02
     auto req = HSMP::ProcessRequest(client_socket, logs/*, current_user*/);
-    req->PrintStructure();
 
-    PrintScreenServer();
-
-    if ((req->type() == HSMP::kExitRequest)) {
-      shutdown(client_socket, SHUT_RDWR);
-      close(client_socket);
+    // This happen if client shut down or disconnect
+    if (req == nullptr) {
+      (*current_user)->SetOffline();
+      PrintScreenServer();
       break;
     }
 
@@ -133,25 +124,29 @@ void AttendConnection(int client_socket, sockaddr_in client_addr) {
       for (User &listed_user : *users) {
         if (listed_user.GetName() == (*current_user)->GetName()) continue;
         if (listed_user.IsOnline()) {
-          send(listed_user.GetFileDescriptor(), res->ParseToCharBuffer(), 50, 0);
+          send(listed_user.GetFileDescriptor(), res->ParseToCharBuffer(), strlen(res->ParseToCharBuffer()), 0);
         }
       }
       continue;
     }
 
     if (res->type() == HSMP::kMessageResponse) {
-      send(destinatario_FD, res->ParseToCharBuffer(), 50, 0);
+      send(destinatario_FD, res->ParseToCharBuffer(), strlen(res->ParseToCharBuffer()), 0);
       continue;
     }
 
     if (res->type() == HSMP::kExitResponse) {
-      shutdown(client_socket, SHUT_RDWR);
-      close(client_socket);
+      send(client_socket, res->ParseToCharBuffer(), strlen(res->ParseToCharBuffer()), 0);
+      PrintScreenServer();
       break;
     }
     
-    send(client_socket, res->ParseToCharBuffer(), 50, 0);
+    send(client_socket, res->ParseToCharBuffer(), strlen(res->ParseToCharBuffer()), 0);
+    PrintScreenServer();
   }
+
+  shutdown(client_socket, SHUT_RDWR);
+  close(client_socket);
 }
 
 void Listen(int port) {
@@ -227,17 +222,24 @@ std::shared_ptr<HSMP::ServerResponse> CreateResponse(
       for (User &user : *users) {
         if (user.GetName() == lreq->user) {
           if (user.GetPassword() == lreq->passwd) {
-            lres->ok = "ok";
-            *current_user = &user;
-            return lres;
+            if (user.IsOnline()){
+              auto eres = std::make_shared<HSMP::ErrorResponse>();
+              eres->message = KMessageWellHacked; // joke answer
+              //eres->message = KMessageAlreadyOnline; // serious answer
+              return eres;
+            } else {
+              lres->ok = "ok";
+              *current_user = &user;
+              return lres;
+            }
           }
           auto eres = std::make_shared<HSMP::ErrorResponse>();
-          eres->message = kMessageErrorPassword;
+          eres->message = kMessageWrongCredentials;
           return eres;
         }
       }
       auto eres = std::make_shared<HSMP::ErrorResponse>();
-      eres->message = kMessageErrorUserDontExist;
+      eres->message = kMessageWrongCredentials;
       return eres;
     }
 
@@ -333,7 +335,7 @@ std::shared_ptr<HSMP::ServerResponse> CreateResponse(
     }
 
     default: {
-      std::cout << "wrong input" << std::endl;
+      std::cout << "This won't be never print" << std::endl;
       return nullptr;
     }
   }

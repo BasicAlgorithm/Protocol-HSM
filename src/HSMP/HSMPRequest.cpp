@@ -199,7 +199,7 @@ std::shared_ptr<ClientRequest> ProcessRequest(int connection_socket,
   recv(connection_socket, buffer, 1000, 0);
 
   if (buffer[0] == '\0')
-    return std::make_shared<ExitRequest>();
+    return nullptr;
 
   //printf("\n\tmensaje recibido: %s\n", buffer);
   char action = buffer[0];

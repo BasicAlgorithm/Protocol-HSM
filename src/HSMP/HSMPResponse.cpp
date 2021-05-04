@@ -72,27 +72,28 @@ char *ListaResponse::ParseToCharBuffer() const {
 }
 
 void MessageResponse::PrintStructure() const {
-  std::cout << "New message:\n";
   //std::cout << "MessageResponse:\n";
   //std::cout << "\ttam_msg: " << this->tam_msg << "\n";
   //std::cout << "\ttam_remitente: " << this->tam_remitente << "\n";
-  std::cout << "\tmsg: " << this->msg << "\n";
-  std::cout << "\tremitente: " << this->remitente << std::endl;
+  //std::cout << "\tmsg: " << this->msg << "\n";
+  //std::cout << "\tremitente: " << this->remitente << std::endl;
+  std::cout << "New message from " << this->remitente << ": " << this->msg << std::endl;
 }
 
 char *MessageResponse::ParseToCharBuffer() const {
+  
   std::string parsed_structure("M");
 
-  if (this->msg.length() <= 99) {
+  if (this->tam_msg <= 99) {
     parsed_structure += "0";
 
-    if (this->msg.length() <= 9)
+    if (this->tam_msg <= 9)
       parsed_structure += "0";
   }
 
   parsed_structure += std::to_string(this->tam_msg);
 
-  if (this->msg.length() <= 9)
+  if (this->tam_remitente <= 9)
       parsed_structure += "0";
 
   parsed_structure += std::to_string(this->tam_remitente);
@@ -105,7 +106,6 @@ char *MessageResponse::ParseToCharBuffer() const {
   std::size_t length = parsed_structure.copy(buffer, parsed_structure.length(),
                        0);
   buffer[length]='\0';
-
   
   //std::cout << "to send: " << buffer << std::endl;
 
@@ -113,12 +113,12 @@ char *MessageResponse::ParseToCharBuffer() const {
 }
 
 void BroadcastResponse::PrintStructure() const {
-  std::cout << "New broadcast message:\n";
   //std::cout << "BroadcastResponse:\n";
   //std::cout << "\tmensaje tam: " << this->tam_msg << "\n";
-  std::cout << "\tmensaje: " << this->msg << "\n";
+  //std::cout << "\tmensaje: " << this->msg << "\n";
   //std::cout << "\tremitente tam: " << this->tam_remitente << "\n";
-  std::cout << "\tremitente: " << this->remitente << std::endl;
+  //std::cout << "\tremitente: " << this->remitente << std::endl;
+  std::cout << "New broadcast message from " << this->remitente << ": " << this->msg << std::endl;
 }
 
 char *BroadcastResponse::ParseToCharBuffer() const {
